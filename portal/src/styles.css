@@ -1,0 +1,58 @@
+:root {
+  --deep: #0b3954; --teal: #0e9594; --seafoam: #7fd1c1; --gold: #eab04e; --sand: #f6e7cb;
+  --shell: #fffdf8; --drift: #5b7280; --line: #e6dcc6; --red: #e5484d; --green: #2a8f6a;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--sand); color: var(--deep); font: 16px/1.55 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
+a { color: var(--teal); }
+h1 { font-size: 1.6rem; margin: 0 0 4px; }
+h2 { font-size: 1.15rem; margin: 28px 0 10px; }
+.muted { color: var(--drift); }
+.small { font-size: .85rem; }
+header.top { background: var(--deep); color: #fff; }
+header.top .in { max-width: 62rem; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+header.top .brand { font-weight: 700; font-size: 1.15rem; color: #fff; text-decoration: none; }
+header.top .brand span { color: var(--seafoam); }
+header.top nav { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
+header.top nav a { color: #cfe3ea; text-decoration: none; padding: 6px 12px; border-radius: 16px; font-size: .92rem; }
+header.top nav a.active { background: rgba(255,255,255,.14); color: #fff; }
+main { max-width: 62rem; margin: 0 auto; padding: 28px 20px 70px; }
+footer { max-width: 62rem; margin: 0 auto; padding: 0 20px 40px; color: var(--drift); font-size: .85rem; }
+.card { background: var(--shell); border: 1px solid var(--line); border-radius: 20px; padding: 20px; margin-bottom: 16px; }
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.tile { background: var(--shell); border: 1px solid var(--line); border-radius: 20px; padding: 16px 18px; }
+.tile .n { font-size: 2rem; font-weight: 700; line-height: 1.1; }
+.tile .l { color: var(--drift); font-size: .85rem; }
+.up { color: var(--green); font-size: .85rem; } .down { color: var(--red); font-size: .85rem; }
+label { display: block; font-weight: 600; font-size: .9rem; margin: 14px 0 4px; }
+input, textarea, select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font: inherit; color: var(--deep); }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+textarea { min-height: 96px; resize: vertical; }
+input[type=checkbox] { width: auto; margin-right: 8px; }
+.check { display: flex; align-items: center; font-weight: 500; margin-top: 14px; }
+button, .btn { background: var(--gold); color: var(--deep); border: 0; border-radius: 23px; padding: 11px 22px; font: inherit; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; }
+button.secondary, .btn.secondary { background: transparent; border: 1px solid var(--deep); }
+button.danger { background: var(--red); color: #fff; }
+button:disabled { opacity: .55; cursor: default; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.spread { justify-content: space-between; }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: .78rem; font-weight: 600; background: #e8eef0; }
+.badge.pending { background: #fbe9c6; } .badge.approved { background: #d9f0e6; } .badge.rejected { background: #f9d9da; }
+.msg { padding: 10px 14px; border-radius: 12px; margin: 12px 0; font-size: .92rem; }
+.msg.err { background: #f9d9da; } .msg.ok { background: #d9f0e6; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 9px 6px; border-bottom: 1px solid var(--line); font-size: .92rem; }
+th { color: var(--drift); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
+td.num, th.num { text-align: right; }
+.bars { display: flex; align-items: flex-end; gap: 3px; height: 110px; padding-top: 8px; }
+.bars div { flex: 1; background: var(--teal); border-radius: 3px 3px 0 0; min-height: 2px; }
+.center { max-width: 26rem; margin: 40px auto; }
+.legal h2 { margin-top: 26px; font-size: 1.05rem; }
+.legal p, .legal li { color: #334e5d; }
+.legal ul { padding-left: 1.2rem; }
+@media (max-width: 560px) { main { padding-top: 20px; } }
+
+.subnav { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 18px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.subnav a { color: var(--deep); text-decoration: none; padding: 8px 14px; border-radius: 16px; font-size: .92rem; border: 1px solid var(--line); background: var(--shell); }
+.subnav a.active { background: var(--deep); color: #fff; border-color: var(--deep); }
+h3 { font-size: 1rem; margin: 18px 0 4px; }

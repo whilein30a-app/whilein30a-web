@@ -1,5 +1,5 @@
 import { CalendarDays, Eye, MousePointerClick, Navigation, Phone, Store, Tag, Trophy, TrendingUp } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import { AreaChart, HBars } from '../charts';
@@ -47,8 +47,12 @@ function Tile({ icon, tone, value, label, children }: { icon: ReactNode; tone: s
 }
 
 function Body({ listingId }: { listingId: string }) {
+  const { reload } = useListings();
   const [stats, setStats] = useState<Stats | null>(null);
   const [err, setErr] = useState('');
+  // If the listing was removed while this page was open, refresh the list once
+  // instead of leaving "Not allowed" on screen.
+  const refreshed = useRef(false);
 
   useEffect(() => {
     let live = true;
@@ -56,8 +60,13 @@ function Body({ listingId }: { listingId: string }) {
     setErr('');
     supabase.rpc('portal_listing_stats', { p_listing_id: listingId }).then(({ data, error }) => {
       if (!live) return;
-      if (error) setErr(errText(error));
-      else setStats(data as Stats);
+      if (error) {
+        if (!refreshed.current && /not allowed/i.test(error.message || '')) {
+          refreshed.current = true;
+          reload();
+        }
+        setErr(errText(error));
+      } else setStats(data as Stats);
     });
     return () => { live = false; };
   }, [listingId]);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
-import { Msg, errText } from '../../components';
+import { AreaChart, HBars } from '../../charts';
+import { Msg, PageHeader, Skeleton, errText } from '../../components';
 import { PLAN_NAME, type PlanId } from '../../plans';
 import { supabase } from '../../supabase';
 
@@ -52,20 +53,22 @@ export function AnalyticsPage() {
     });
   }, [days]);
 
-  const max = Math.max(1, ...(d?.series ?? []).map((s) => s.taps + s.views));
 
   return (
     <>
-      <div className="row spread">
-        <h1>Analytics</h1>
-        <div className="row">
-          {[7, 30, 90].map((n) => (
-            <button key={n} type="button" className={days === n ? '' : 'secondary'} onClick={() => setDays(n)}>{n} days</button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title="Analytics"
+        sub="How visitors use the app and the businesses in it"
+        actions={
+          <div className="toggle" role="group" aria-label="Period">
+            {[7, 30, 90].map((n) => (
+              <button key={n} type="button" aria-pressed={days === n} onClick={() => setDays(n)}>{n} days</button>
+            ))}
+          </div>
+        }
+      />
       {err && <Msg kind="err">{err}</Msg>}
-      {!d && !err && <p className="muted">Loading...</p>}
+      {!d && !err && <Skeleton height={140} count={2} />}
       {d && (
         <>
           <p className="muted small">Last {d.days} days through {d.through}. Counted overnight, so today is not included.</p>
@@ -79,10 +82,7 @@ export function AnalyticsPage() {
 
           <h2>Activity per day</h2>
           <div className="card">
-            <div className="bars" role="img" aria-label="Taps and views per day">
-              {d.series.map((s) => (<div key={s.day} title={`${s.day}: ${s.taps} taps, ${s.views} views`} style={{ height: `${((s.taps + s.views) / max) * 100}%` }} />))}
-            </div>
-            {d.series.length === 0 && <p className="muted small">No data yet.</p>}
+            <AreaChart data={d.series.map((s) => ({ day: s.day, a: s.taps, b: s.views }))} aLabel="Visitor taps" bLabel="Listings opened" />
           </div>
 
           <h2>By type</h2>
@@ -113,9 +113,7 @@ export function AnalyticsPage() {
             <div className="card">
               <h2 style={{ marginTop: 0 }}>Where taps come from</h2>
               {d.by_source.length === 0 && <p className="muted small">No data yet.</p>}
-              <table>
-                <tbody>{d.by_source.map((s) => (<tr key={s.source}><td>{s.source}</td><td className="num">{s.taps}</td></tr>))}</tbody>
-              </table>
+              <HBars rows={d.by_source.map((s) => ({ label: s.source, value: Number(s.taps) }))} />
               <h2>Plans</h2>
               <table>
                 <tbody>{(Object.keys(PLAN_NAME) as PlanId[]).map((p) => (<tr key={p}><td>{PLAN_NAME[p]}</td><td className="num">{d.plans[p] ?? 0}</td></tr>))}</tbody>

@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '../auth';
-import { NeedListing, Msg, errText } from '../components';
+import { NeedListing, Msg, errText, PageHeader } from '../components';
 import { useListings } from '../listings';
-import { centralToday, money, payUrl, PLAN_NAME, PUSH_PRICE, useSetting, WINDOWS } from '../plans';
+import { centralToday, fmtDate, money, payUrl, PLAN_NAME, PUSH_PRICE, useSetting, WINDOWS } from '../plans';
 import { supabase } from '../supabase';
 
 type PushType = 'none' | 'included' | 'single' | 'nearby';
@@ -26,7 +26,7 @@ const PUSH_LABEL: Record<PushType, string> = {
 
 function pushLine(d: Deal): string {
   if (d.push_type === 'none' || !d.push_date) return '';
-  const when = `${d.push_date}, ${d.push_window === 'morning' ? 'morning' : 'afternoon'} window`;
+  const when = `${fmtDate(d.push_date)}, ${d.push_window === 'morning' ? 'morning' : 'afternoon'} window`;
   const st = d.push_status === 'sent' ? `sent to ${d.push_recipients ?? 0} people`
     : d.push_status === 'scheduled' ? 'scheduled'
     : d.push_status === 'cancelled' ? 'cancelled'
@@ -207,7 +207,7 @@ function Body({ listingId }: { listingId: string }) {
               <span className={`badge ${d.review_status}`}>{d.review_status === 'approved' ? (d.is_active ? 'Live' : 'Paused') : d.review_status}</span>
             </div>
             <p style={{ margin: '6px 0' }}>{d.discount_text}</p>
-            <p className="muted small">{d.valid_until ? `Until ${d.valid_until}` : 'No end date'}</p>
+            <p className="muted small">{d.valid_until ? `Until ${fmtDate(d.valid_until)}` : 'No end date'}</p>
             {pushLine(d) && <p className="muted small">{pushLine(d)}</p>}
             {d.review_note && <Msg kind="err">{d.review_note}</Msg>}
             <div className="row">
@@ -232,7 +232,7 @@ function Body({ listingId }: { listingId: string }) {
 export function DealsPage() {
   return (
     <>
-      <h1>Deals</h1>
+      <PageHeader title="Deals" sub="Offers that show in the app, with optional push notifications" />
       <NeedListing>{(id) => <Body listingId={id} />}</NeedListing>
     </>
   );

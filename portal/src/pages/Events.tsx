@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
-import { NeedListing, Msg, errText } from '../components';
+import { NeedListing, Msg, errText, PageHeader } from '../components';
 import { useListings } from '../listings';
 import { supabase } from '../supabase';
 
@@ -81,7 +81,7 @@ function Body({ listingId }: { listingId: string }) {
 export function EventsPage() {
   return (
     <>
-      <h1>Events</h1>
+      <PageHeader title="Events" sub="Add what's on so visitors find it in Events" />
       <NeedListing>{(id) => <Body listingId={id} />}</NeedListing>
     </>
   );

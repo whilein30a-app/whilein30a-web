@@ -1,6 +1,15 @@
+import {
+  BarChart3, Bell, CalendarDays, ChevronRight, ClipboardCheck, Crown, Gauge, LayoutDashboard, LogOut, Megaphone,
+  Menu, MoreHorizontal, Plus, Settings, SlidersHorizontal, Store, Tag, X,
+} from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 
+import logoReverse from './assets/logo-reverse.png';
 import { useAuth } from './auth';
+import { Skeleton } from './components';
+import { useListings } from './listings';
+import { PLAN_NAME } from './plans';
 import { configured } from './supabase';
 import { AdminPage } from './pages/Admin';
 import { ApplyPage } from './pages/Apply';
@@ -14,40 +23,140 @@ import { PrivacyPage } from './pages/Privacy';
 import { SettingsPage } from './pages/Settings';
 import { SignupPage } from './pages/Signup';
 
-function Shell() {
-  const { session, isAdmin, signOut } = useAuth();
+function BusinessCard() {
+  const { current, listings, select } = useListings();
+  if (!current) return null;
   return (
-    <>
-      <header className="top">
-        <div className="in">
-          <Link to="/" className="brand">in30A <span>Business</span></Link>
-          {session && (
-            <nav>
-              <NavLink to="/" end>Dashboard</NavLink>
-              <NavLink to="/listing">Listing</NavLink>
-              <NavLink to="/deals">Deals</NavLink>
-              <NavLink to="/events">Events</NavLink>
-              <NavLink to="/plan">Plan</NavLink>
-              <NavLink to="/apply">Add a business</NavLink>
-              {isAdmin && <NavLink to="/admin">Admin</NavLink>}
-              <NavLink to="/settings">Settings</NavLink>
-            </nav>
-          )}
-          {session && <button className="secondary" style={{ color: '#fff', borderColor: '#fff' }} onClick={signOut}>Sign out</button>}
+    <div className="biz">
+      <div className="biz-name">{current.name}</div>
+      <div className="biz-meta">
+        <span className="badge plan">{PLAN_NAME[current.plan ?? 'basic']}</span>
+        {current.is_founding && <span>Founding Partner</span>}
+      </div>
+      {listings.length > 1 && (
+        <select aria-label="Switch business" value={current.id} onChange={(e) => select(e.target.value)}>
+          {listings.map((l) => (<option key={l.id} value={l.id}>{l.name}</option>))}
+        </select>
+      )}
+    </div>
+  );
+}
+
+function Side({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
+  const { isAdmin, signOut, session } = useAuth();
+  const { current } = useListings();
+  const loc = useLocation();
+  const inAdmin = loc.pathname.startsWith('/admin');
+  const [adminOpen, setAdminOpen] = useState(inAdmin);
+  useEffect(() => { if (inAdmin) setAdminOpen(true); }, [inAdmin]);
+
+  const L = ({ to, end, icon, children }: { to: string; end?: boolean; icon: ReactNode; children: ReactNode }) => (
+    <NavLink to={to} end={end} className="nav" onClick={onNavigate}>{icon}{children}</NavLink>
+  );
+
+  return (
+    <aside className={`side ${open ? 'open' : ''}`} aria-label="Main menu">
+      <Link to="/" className="side-logo" onClick={onNavigate}>
+        <img src={logoReverse} alt="in30A" />
+        <span>Business</span>
+      </Link>
+      <BusinessCard />
+      <nav className="nav-group" aria-label="My business">
+        <L to="/" end icon={<LayoutDashboard size={19} />}>Dashboard</L>
+        <L to="/listing" icon={<Store size={19} />}>Listing</L>
+        <L to="/deals" icon={<Tag size={19} />}>Deals</L>
+        <L to="/events" icon={<CalendarDays size={19} />}>Events</L>
+        <L to="/plan" icon={<Crown size={19} />}>Plan</L>
+        <L to="/apply" icon={<Plus size={19} />}>Add a business</L>
+      </nav>
+      {current && current.plan === 'basic' && (
+        <div className="upsell">
+          <strong>Get seen first</strong>
+          <p>Premium adds photos, deals and events, and ranks you above free listings.</p>
+          <Link to="/plan" onClick={onNavigate}>See plans</Link>
         </div>
+      )}
+      {isAdmin && (
+        <nav className="nav-group" aria-label="Admin">
+          <button type="button" className="nav" aria-expanded={adminOpen} onClick={() => setAdminOpen((o) => !o)}>
+            <Gauge size={19} />Admin<ChevronRight size={16} className="chev" />
+          </button>
+          {adminOpen && (
+            <div className="nav-sub">
+              <L to="/admin" end icon={<ClipboardCheck size={17} />}>Review queue</L>
+              <L to="/admin/plans" icon={<Crown size={17} />}>Plans and slots</L>
+              <L to="/admin/pushes" icon={<Bell size={17} />}>Pushes</L>
+              <L to="/admin/sponsors" icon={<Megaphone size={17} />}>Sponsors</L>
+              <L to="/admin/analytics" icon={<BarChart3 size={17} />}>Analytics</L>
+              <L to="/admin/settings" icon={<SlidersHorizontal size={17} />}>App settings</L>
+            </div>
+          )}
+        </nav>
+      )}
+      <div className="side-foot nav-group">
+        <L to="/settings" icon={<Settings size={19} />}>Account settings</L>
+        <button type="button" className="nav" onClick={signOut}><LogOut size={19} />Sign out</button>
+        <div className="side-email">{session?.user.email}</div>
+      </div>
+    </aside>
+  );
+}
+
+function Shell() {
+  const { session } = useAuth();
+  const { current } = useListings();
+  const [open, setOpen] = useState(false);
+  const loc = useLocation();
+  useEffect(() => { setOpen(false); }, [loc.pathname]);
+
+  // Signed-out pages (login, sign up, privacy) use their own full-screen layout.
+  if (!session) return <Outlet />;
+
+  const tab = (to: string, label: string, icon: ReactNode, end = false) => (
+    <NavLink to={to} end={end}>{icon}<span>{label}</span></NavLink>
+  );
+
+  return (
+    <div className="app">
+      <header className="topbar">
+        <button type="button" className="ghost" style={{ color: '#fff', minHeight: 44 }} aria-label="Open menu" aria-expanded={open} onClick={() => setOpen(true)}>
+          <Menu size={24} />
+        </button>
+        <img src={logoReverse} alt="in30A Business" />
+        <div className="who">{current?.name ?? 'Business'}</div>
       </header>
-      <main><Outlet /></main>
-      <footer>
-        <Link to="/privacy">Privacy Policy</Link> · Visit Like a Local LLC d/b/a in30A · <a href="mailto:hello@in30a.app">hello@in30a.app</a>
-      </footer>
-    </>
+
+      <Side open={open} onNavigate={() => setOpen(false)} />
+      {open && (
+        <div className="scrim" onClick={() => setOpen(false)}>
+          <button type="button" className="ghost" aria-label="Close menu" style={{ position: 'absolute', right: 12, top: 12, color: '#fff' }}>
+            <X size={26} />
+          </button>
+        </div>
+      )}
+
+      <div className="content">
+        <main><Outlet /></main>
+        <footer>
+          <Link to="/privacy">Privacy Policy</Link> · Visit Like a Local LLC d/b/a in30A · <a href="mailto:hello@in30a.app">hello@in30a.app</a>
+        </footer>
+      </div>
+
+      <nav className="tabbar" aria-label="Quick menu">
+        {tab('/', 'Home', <LayoutDashboard size={21} />, true)}
+        {tab('/listing', 'Listing', <Store size={21} />)}
+        {tab('/deals', 'Deals', <Tag size={21} />)}
+        {tab('/events', 'Events', <CalendarDays size={21} />)}
+        <button type="button" onClick={() => setOpen(true)}><MoreHorizontal size={21} /><span>More</span></button>
+      </nav>
+    </div>
   );
 }
 
 function RequireAuth({ admin }: { admin?: boolean }) {
   const { session, isAdmin, loading } = useAuth();
   const loc = useLocation();
-  if (loading) return <p className="muted">Loading...</p>;
+  if (loading) return <Skeleton height={160} />;
   if (!session) return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
   if (admin && !isAdmin) return <Navigate to="/" replace />;
   return <Outlet />;

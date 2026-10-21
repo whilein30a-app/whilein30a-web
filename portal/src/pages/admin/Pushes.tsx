@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
-import { Msg, errText } from '../../components';
+import { Msg, errText, PageHeader } from '../../components';
 import { centralToday, WINDOWS } from '../../plans';
 import { supabase } from '../../supabase';
 
@@ -84,7 +84,7 @@ export function PushesPage() {
 
   return (
     <>
-      <h1>Pushes</h1>
+      <PageHeader title="Pushes" sub="Booked windows, payments and announcements to the app" />
       {msg && <Msg kind="ok">{msg}</Msg>}
       {err && <Msg kind="err">{err}</Msg>}
 

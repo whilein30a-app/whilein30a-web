@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
+import { AuthLayout } from '../auth-layout';
 import { Msg } from '../components';
 import { supabase } from '../supabase';
 
@@ -30,16 +31,20 @@ export function SignupPage() {
 
   if (done) {
     return (
-      <div className="center card">
-        <h1>Check your email</h1>
-        <p>We sent a confirmation link to {email}. Open it, then <Link to="/login">sign in</Link>.</p>
-      </div>
+      <AuthLayout>
+        <div className="card">
+          <h1>Check your email</h1>
+          <p>We sent a confirmation link to <strong>{email}</strong>. Open it, then <Link to="/login">sign in</Link>.</p>
+        </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="center card">
+    <AuthLayout>
+    <div className="card">
       <h1>Create your account</h1>
+      <p className="muted">Free to start. Claim your business once you are in.</p>
       <form onSubmit={submit}>
         <label htmlFor="email">Work email</label>
         <input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -50,9 +55,10 @@ export function SignupPage() {
           <span>I have read the <Link to="/privacy" target="_blank">Privacy Policy</Link></span>
         </label>
         {err && <Msg kind="err">{err}</Msg>}
-        <div style={{ marginTop: 18 }}><button type="submit" disabled={busy}>{busy ? 'Creating...' : 'Create account'}</button></div>
+        <button type="submit" disabled={busy} style={{ width: '100%', marginTop: 20 }}>{busy ? 'Creating...' : 'Create account'}</button>
       </form>
-      <p className="small muted" style={{ marginTop: 18 }}>Already have an account? <Link to="/login">Sign in</Link></p>
+      <p className="small muted" style={{ marginTop: 14, textAlign: 'center' }}>Already have an account? <Link to="/login">Sign in</Link></p>
     </div>
+    </AuthLayout>
   );
 }

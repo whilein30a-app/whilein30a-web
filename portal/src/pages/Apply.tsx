@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
-import { Msg, errText } from '../components';
+import { Msg, errText, PageHeader } from '../components';
 import { useAuth } from '../auth';
 import { supabase } from '../supabase';
 
@@ -65,7 +65,7 @@ export function ApplyPage() {
 
   return (
     <>
-      <h1>Add your business</h1>
+      <PageHeader title="Add your business" sub="Claim your listing in the app, or tell us about a new one" />
       <form className="card" onSubmit={submit}>
         <div className="row" style={{ marginBottom: 8 }}>
           <button type="button" className={mode === 'claim' ? '' : 'secondary'} onClick={() => setMode('claim')}>It is already in in30A</button>

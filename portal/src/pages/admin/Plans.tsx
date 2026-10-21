@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { Msg, errText } from '../../components';
+import { Msg, errText, PageHeader } from '../../components';
 import { PLAN_NAME, type PlanId } from '../../plans';
 import { supabase } from '../../supabase';
 
 type Row = {
   id: string; name: string; category: string | null; subcategory: string | null;
   plan: PlanId; billing: 'month' | 'year' | null; is_founding: boolean | null; plan_expires_on: string | null;
+  area_status: 'core' | 'serves_30a' | 'outside' | null; area_status_override: string | null; area_reason: string | null; town: string | null;
 };
+
+const AREA_LABEL: Record<string, string> = { core: 'Inside 30A', serves_30a: 'Serves 30A (based outside)', outside: 'Outside 30A (hidden)' };
 type Sub = { name: string; category: string; sort: number };
 type Slot = { category: string; subcategory: string; featured_names: string[]; spotlight_names: string[] };
 
@@ -17,6 +20,8 @@ function Editor({ row, subs, onDone }: { row: Row; subs: Sub[]; onDone: (msg: st
   const [billing, setBilling] = useState<'month' | 'year'>(row.billing ?? 'month');
   const [founding, setFounding] = useState(!!row.is_founding);
   const [expires, setExpires] = useState(row.plan_expires_on ?? '');
+  const [area, setArea] = useState(row.area_status_override ?? '');
+  const [areaWhy, setAreaWhy] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -26,6 +31,10 @@ function Editor({ row, subs, onDone }: { row: Row; subs: Sub[]; onDone: (msg: st
     setErr(''); setBusy(true);
     if ((row.subcategory ?? '') !== sub) {
       const r = await supabase.rpc('admin_set_subcategory', { p_listing_id: row.id, p_subcategory: sub || null });
+      if (r.error) { setBusy(false); return setErr(errText(r.error)); }
+    }
+    if ((row.area_status_override ?? '') !== area) {
+      const r = await supabase.rpc('admin_set_area', { p_listing_id: row.id, p_status: area || null, p_reason: areaWhy || null });
       if (r.error) { setBusy(false); return setErr(errText(r.error)); }
     }
     const { error } = await supabase.rpc('admin_set_plan', {
@@ -39,7 +48,11 @@ function Editor({ row, subs, onDone }: { row: Row; subs: Sub[]; onDone: (msg: st
 
   return (
     <div className="card">
-      <strong>{row.name}</strong> <span className="muted small">{row.category}</span>
+      <div className="row spread">
+        <div><strong>{row.name}</strong> <span className="muted small">{row.category}{row.town ? ` · ${row.town}` : ''}</span></div>
+        <span className={`badge ${row.area_status === 'outside' ? 'rejected' : 'approved'}`}>{AREA_LABEL[row.area_status ?? ''] ?? 'Not checked'}</span>
+      </div>
+      {row.area_reason && <p className="muted small" style={{ margin: '4px 0 0' }}>Area: {row.area_reason}</p>}
       <div className="grid" style={{ marginTop: 8 }}>
         <div>
           <label htmlFor={`s${row.id}`}>Subcategory</label>
@@ -70,6 +83,23 @@ function Editor({ row, subs, onDone }: { row: Row; subs: Sub[]; onDone: (msg: st
           </>
         )}
       </div>
+      <div className="grid">
+        <div>
+          <label htmlFor={`a${row.id}`}>Area</label>
+          <select id={`a${row.id}`} value={area} onChange={(e) => setArea(e.target.value)}>
+            <option value="">Automatic (from its location)</option>
+            <option value="core">Inside 30A</option>
+            <option value="serves_30a">Serves 30A, based outside</option>
+            <option value="outside">Outside 30A, hide it</option>
+          </select>
+        </div>
+        {(row.area_status_override ?? '') !== area && area && (
+          <div>
+            <label htmlFor={`w${row.id}`}>Why (required)</label>
+            <input id={`w${row.id}`} value={areaWhy} maxLength={200} placeholder="e.g. delivers golf carts to 30A rentals" onChange={(e) => setAreaWhy(e.target.value)} />
+          </div>
+        )}
+      </div>
       <label className="check"><input type="checkbox" checked={founding} onChange={(e) => setFounding(e.target.checked)} /><span>Founding Partner</span></label>
       {err && <Msg kind="err">{err}</Msg>}
       <div style={{ marginTop: 12 }}><button type="button" disabled={busy} onClick={save}>{busy ? 'Saving...' : 'Save'}</button></div>
@@ -80,6 +110,7 @@ function Editor({ row, subs, onDone }: { row: Row; subs: Sub[]; onDone: (msg: st
 export function PlansPage() {
   const [q, setQ] = useState('');
   const [onlyUnassigned, setOnlyUnassigned] = useState(false);
+  const [onlyServes, setOnlyServes] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
   const [subs, setSubs] = useState<Sub[]>([]);
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -103,15 +134,16 @@ export function PlansPage() {
 
   const search = useCallback(async () => {
     let query = supabase.from('listings')
-      .select('id,name,category,subcategory,plan,billing,is_founding,plan_expires_on')
+      .select('id,name,category,subcategory,plan,billing,is_founding,plan_expires_on,area_status,area_status_override,area_reason,town')
       .order('name').limit(25);
     const term = q.trim().replace(/[%,()]/g, ' ');
     if (term) query = query.ilike('name', `%${term}%`);
     if (onlyUnassigned) query = query.is('subcategory', null).eq('is_public_access', false);
+    if (onlyServes) query = query.eq('area_status', 'serves_30a');
     const { data, error } = await query;
     if (error) setErr(errText(error));
     setRows((data ?? []) as Row[]);
-  }, [q, onlyUnassigned]);
+  }, [q, onlyUnassigned, onlyServes]);
 
   useEffect(() => { loadStatic(); }, [loadStatic]);
   useEffect(() => { const t = setTimeout(search, 250); return () => clearTimeout(t); }, [search]);
@@ -130,7 +162,7 @@ export function PlansPage() {
 
   return (
     <>
-      <h1>Plans</h1>
+      <PageHeader title="Plans and slots" sub="Set plans, subcategories and areas, and see open Featured and Spotlight slots" />
       <div className="grid">
         <div className="tile"><div className="n">{founders} / 20</div><div className="l">Founding Partners</div></div>
         <div className="tile"><div className="n">{unassigned}</div><div className="l">Listings without a subcategory</div></div>
@@ -144,10 +176,13 @@ export function PlansPage() {
         <label className="check" style={{ margin: 0 }}>
           <input type="checkbox" checked={onlyUnassigned} onChange={(e) => setOnlyUnassigned(e.target.checked)} /><span>No subcategory</span>
         </label>
+        <label className="check" style={{ margin: 0 }}>
+          <input type="checkbox" checked={onlyServes} onChange={(e) => setOnlyServes(e.target.checked)} /><span>Serves 30A, to confirm</span>
+        </label>
         <button type="button" className="secondary" onClick={auto}>Auto-assign subcategories</button>
       </div>
       {rows.length === 0 && <p className="muted">No matches.</p>}
-      {rows.map((r) => (<Editor key={r.id + r.plan + (r.subcategory ?? '')} row={r} subs={subs} onDone={done} />))}
+      {rows.map((r) => (<Editor key={r.id + r.plan + (r.subcategory ?? '') + (r.area_status_override ?? '')} row={r} subs={subs} onDone={done} />))}
 
       <h2>Featured and Spotlight slots</h2>
       <p className="muted small">Up to 3 Featured and 1 Spotlight per subcategory. Empty rows are open.</p>

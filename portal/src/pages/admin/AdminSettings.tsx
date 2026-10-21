@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 
-import { Msg, errText } from '../../components';
+import { Msg, errText, PageHeader } from '../../components';
 import { PLAN_NAME, PRICES, PUSH_PRICE, money } from '../../plans';
 import { supabase } from '../../supabase';
 
@@ -77,7 +77,7 @@ export function AdminSettingsPage() {
 
   return (
     <>
-      <h1>Settings</h1>
+      <PageHeader title="App settings" sub="Payment links, plan limits, push times and Nearby" />
       {msg && <Msg kind="ok">{msg}</Msg>}
       {err && <Msg kind="err">{err}</Msg>}
 

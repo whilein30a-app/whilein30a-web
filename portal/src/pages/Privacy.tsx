@@ -21,7 +21,7 @@ export function PrivacyPage() {
   flush();
 
   return (
-    <div className="card legal">
+    <div className="card legal" style={{ maxWidth: 820, margin: '24px auto' }}>
       <h1>Privacy Policy</h1>
       <p className="muted small">Last updated: {PRIVACY_LAST_UPDATED}</p>
       {blocks.map((b, i) => (

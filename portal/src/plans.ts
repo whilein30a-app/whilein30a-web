@@ -62,3 +62,7 @@ export function payUrl(base: string | undefined, ref: string, email?: string | n
     return null;
   }
 }
+
+/** 2026-10-20 -> Tue, Oct 20 */
+export const fmtDate = (d: string | null | undefined) =>
+  d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
+import { AuthLayout } from '../auth-layout';
 import { Msg } from '../components';
 import { useAuth } from '../auth';
 import { supabase } from '../supabase';
@@ -39,8 +40,9 @@ export function LoginPage() {
   }
 
   return (
-    <div className="center card">
-      <h1>Business login</h1>
+    <AuthLayout>
+    <div className="card">
+      <h1>Sign in</h1>
       <p className="muted">Manage your in30A listing, deals and events.</p>
       <form onSubmit={submit}>
         <label htmlFor="email">Email</label>
@@ -49,12 +51,11 @@ export function LoginPage() {
         <input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         {err && <Msg kind="err">{err}</Msg>}
         {info && <Msg kind="ok">{info}</Msg>}
-        <div className="row spread" style={{ marginTop: 18 }}>
-          <button type="submit" disabled={busy}>{busy ? 'Signing in...' : 'Sign in'}</button>
-          <button type="button" className="secondary" onClick={reset}>Forgot password</button>
-        </div>
+        <button type="submit" disabled={busy} style={{ width: '100%', marginTop: 20 }}>{busy ? 'Signing in...' : 'Sign in'}</button>
+        <button type="button" className="ghost" onClick={reset} style={{ width: '100%', marginTop: 6 }}>Forgot your password?</button>
       </form>
-      <p className="small muted" style={{ marginTop: 18 }}>New here? <Link to="/signup">Create an account</Link></p>
+      <p className="small muted" style={{ marginTop: 14, textAlign: 'center' }}>New to in30A Business? <Link to="/signup">Create an account</Link></p>
     </div>
+    </AuthLayout>
   );
 }

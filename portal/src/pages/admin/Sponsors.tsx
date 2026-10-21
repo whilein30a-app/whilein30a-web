@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 
-import { Msg, errText } from '../../components';
+import { Msg, errText, PageHeader } from '../../components';
 import { supabase } from '../../supabase';
 
 type Slot = 'home_carousel' | 'section_parking' | 'section_beaches' | 'section_weather' | 'section_events' | 'section_tram' | 'presenting';
@@ -127,7 +127,7 @@ export function SponsorsPage() {
 
   return (
     <>
-      <h1>Sponsors</h1>
+      <PageHeader title="Sponsors" sub="Home carousel, section banners and the presenting sponsor" />
       <p className="muted">Sold by you and turned on here. Changes show in the app within a few minutes.</p>
       {msg && <Msg kind="ok">{msg}</Msg>}
       {err && <Msg kind="err">{err}</Msg>}

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
-import { NeedListing, Msg, errText } from '../components';
+import { NeedListing, Msg, errText, PageHeader } from '../components';
 import { useListings } from '../listings';
 import { PLAN_NAME } from '../plans';
 import { supabase } from '../supabase';
@@ -122,7 +122,7 @@ function Form({ id }: { id: string }) {
 export function ListingPage() {
   return (
     <>
-      <h1>Your listing</h1>
+      <PageHeader title="Your listing" sub="What visitors see when they open you in the app" />
       <NeedListing>{(id) => <Form id={id} />}</NeedListing>
     </>
   );

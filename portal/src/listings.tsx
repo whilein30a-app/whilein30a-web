@@ -20,6 +20,7 @@ export type MyListing = {
   logo_url: string | null;
   menu_url: string | null;
   booking_url: string | null;
+  hours_note: string | null;
 };
 
 type State = {

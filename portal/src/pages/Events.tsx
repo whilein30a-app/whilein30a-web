@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
 import { NeedListing, Msg, errText, PageHeader } from '../components';
 import { useListings } from '../listings';
+import { PaidGate } from '../paid';
 import { supabase } from '../supabase';
 
 type Sub = { id: string; title: string; start_date: string; status: 'pending' | 'approved' | 'rejected'; review_note: string | null };
@@ -82,7 +83,7 @@ export function EventsPage() {
   return (
     <>
       <PageHeader title="Events" sub="Add what's on so visitors find it in Events" />
-      <NeedListing>{(id) => <Body listingId={id} />}</NeedListing>
+      <NeedListing>{(id) => <PaidGate what="Events"><Body listingId={id} /></PaidGate>}</NeedListing>
     </>
   );
 }

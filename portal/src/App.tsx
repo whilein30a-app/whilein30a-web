@@ -1,6 +1,6 @@
 import {
   BarChart3, Bell, CalendarDays, ChevronRight, ClipboardCheck, Crown, Gauge, LayoutDashboard, LogOut, Megaphone,
-  Menu, MoreHorizontal, Plus, Settings, SlidersHorizontal, Store, Tag, X,
+  Menu, MessageCircleQuestion, MoreHorizontal, Plus, Settings, SlidersHorizontal, Store, Tag, X,
 } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
@@ -88,6 +88,7 @@ function Side({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
               <L to="/admin/pushes" icon={<Bell size={17} />}>Pushes</L>
               <L to="/admin/sponsors" icon={<Megaphone size={17} />}>Sponsors</L>
               <L to="/admin/analytics" icon={<BarChart3 size={17} />}>Analytics</L>
+              <L to="/admin/questions" icon={<MessageCircleQuestion size={17} />}>Ask 30A questions</L>
               <L to="/admin/settings" icon={<SlidersHorizontal size={17} />}>App settings</L>
             </div>
           )}

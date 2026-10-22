@@ -1,9 +1,11 @@
 import { Check, Crown, Megaphone, Sparkles, Star } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useAuth } from '../auth';
 import { NeedListing, PageHeader } from '../components';
 import { useListings } from '../listings';
+import { supabase } from '../supabase';
+import { Msg, errText } from '../components';
 import { money, payUrl, PLAN_BLURB, PLAN_NAME, PRICES, PUSH_PRICE, useSetting, type PlanId } from '../plans';
 
 const PAID: Array<Exclude<PlanId, 'basic'>> = ['premium', 'featured', 'spotlight'];
@@ -15,9 +17,28 @@ function Body() {
   const { session } = useAuth();
   const links = useSetting<Record<string, string>>('stripe_links').value ?? {};
   const [billing, setBilling] = useState<'month' | 'year'>('month');
+  const [slots, setSlots] = useState<{ subcategory: string | null; featured_left: number; spotlight_left: number } | null>(null);
+  const [foundingLeft, setFoundingLeft] = useState(0);
+  const [asked, setAsked] = useState<string>('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState('');
+  const listingId = current?.id;
+  useEffect(() => { supabase.rpc('portal_founding_left').then(({ data }) => setFoundingLeft(typeof data === 'number' ? data : 0)); }, []);
+  useEffect(() => {
+    if (!listingId) return;
+    supabase.rpc('portal_slots_left', { p_listing_id: listingId }).then(({ data }) => setSlots(((data ?? [])[0] as typeof slots) ?? null));
+  }, [listingId]);
   if (!current) return null;
 
-  const tier: 'founding' | 'standard' = current.is_founding ? 'founding' : 'standard';
+  async function request(plan: string) {
+    setErr(''); setAsked(''); setBusy(plan);
+    const { error } = await supabase.rpc('portal_request_plan', { p_listing_id: current!.id, p_plan: plan, p_billing: billing });
+    setBusy('');
+    if (error) return setErr(errText(error));
+    setAsked(plan);
+  }
+
+  const tier: 'founding' | 'standard' = current.is_founding || foundingLeft > 0 ? 'founding' : 'standard';
   const email = session?.user.email;
 
   return (
@@ -34,7 +55,7 @@ function Body() {
         </div>
         <div className="toggle" role="group" aria-label="Billing">
           <button type="button" aria-pressed={billing === 'month'} onClick={() => setBilling('month')}>Monthly</button>
-          <button type="button" aria-pressed={billing === 'year'} onClick={() => setBilling('year')}>Yearly, 2 months free</button>
+          <button type="button" aria-pressed={billing === 'year'} onClick={() => setBilling('year')}>Yearly</button>
         </div>
       </div>
 
@@ -43,6 +64,9 @@ function Body() {
           const price = PRICES[tier][p][billing];
           const url = payUrl(links[`${p}_${tier}_${billing}`], current.id, email);
           const here = current.plan === p;
+          const left = p === 'featured' ? slots?.featured_left : p === 'spotlight' ? slots?.spotlight_left : undefined;
+          const full = left !== undefined && left !== null && left < 1;
+          const noSub = (p === 'featured' || p === 'spotlight') && !slots?.subcategory;
           return (
             <div className={`card price ${p === 'featured' ? 'recommended' : ''}`} key={p} style={{ marginBottom: 0 }}>
               {p === 'featured' && <span className="flag">Most chosen</span>}
@@ -50,9 +74,18 @@ function Body() {
               <h2 style={{ margin: '12px 0 2px' }}>{PLAN_NAME[p]}</h2>
               <div><span style={{ fontSize: '2rem', fontWeight: 700 }}>{money(price)}</span><span className="muted"> a {billing === 'month' ? 'month' : 'year'}</span></div>
               <ul>{PLAN_BLURB[p].map((b) => (<li key={b}><Check size={16} />{b}</li>))}</ul>
+              {(p === 'featured' || p === 'spotlight') && (
+                <p className="small" style={{ margin: '0 0 10px' }}>
+                  {noSub ? 'We will set your subcategory when you ask.'
+                    : full ? <strong>No place open in {slots?.subcategory}</strong>
+                    : <strong>{left} of {p === 'featured' ? 3 : 1} {left === 1 ? 'place' : 'places'} left in {slots?.subcategory}</strong>}
+                </p>
+              )}
               {here ? <span className="badge approved">Your current plan</span>
+                : full ? <button type="button" className="secondary" disabled style={{ width: '100%' }}>Full right now</button>
                 : url ? <a className="btn" style={{ width: '100%' }} href={url} target="_blank" rel="noopener noreferrer">Choose {PLAN_NAME[p]}</a>
-                : <p className="muted small" style={{ margin: 0 }}>Online payment is coming soon. Email hello@in30a.app to start this plan.</p>}
+                : asked === p ? <span className="badge approved">Request sent. We will email you.</span>
+                : <button type="button" style={{ width: '100%' }} disabled={busy === p} onClick={() => request(p)}>{busy === p ? 'Sending...' : `Choose ${PLAN_NAME[p]}`}</button>}
             </div>
           );
         })}
@@ -60,10 +93,11 @@ function Body() {
 
       <p className="muted small" style={{ marginTop: 12 }}>
         {tier === 'founding'
-          ? 'Founding Partner prices are locked for 2 years.'
-          : 'Founding Partner prices are for our first 20 partners. Email hello@in30a.app to ask about a place.'}
-        {' '}After you pay we turn your plan on, usually within one business day. Featured and Spotlight need a free slot in your subcategory.
+          ? `Founding Partner prices, locked for 2 years. ${current.is_founding ? 'You are one of our first 20.' : `${foundingLeft} of 20 places left.`}`
+          : 'Founding Partner places are full. These are our standard prices.'}
+        {' '}Choose a plan and we email you the payment details; once you pay we turn it on, usually within one business day. Featured and Spotlight need a free place in your subcategory.
       </p>
+      {err && <Msg kind="err">{err}</Msg>}
 
       <div className="card" style={{ marginTop: 18 }}>
         <div className="row" style={{ alignItems: 'flex-start', gap: 14 }}>

@@ -7,6 +7,7 @@ import { supabase } from '../../supabase';
 type Row = {
   id: string; name: string; category: string | null; subcategory: string | null;
   plan: PlanId; billing: 'month' | 'year' | null; is_founding: boolean | null; plan_expires_on: string | null;
+  latitude: number | null; longitude: number | null; address: string | null;
   area_status: 'core' | 'serves_30a' | 'outside' | null; area_status_override: string | null; area_reason: string | null; town: string | null;
 };
 
@@ -24,6 +25,22 @@ function Editor({ row, subs, onDone }: { row: Row; subs: Sub[]; onDone: (msg: st
   const [areaWhy, setAreaWhy] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [lat, setLat] = useState(row.latitude != null ? String(row.latitude) : '');
+  const [lng, setLng] = useState(row.longitude != null ? String(row.longitude) : '');
+  const [pinMsg, setPinMsg] = useState('');
+
+  async function findPin() {
+    setPinMsg('');
+    const { data, error } = await supabase.functions.invoke('geocode-address', { body: { address: row.address ?? '' } });
+    let why = (data as { error?: string } | null)?.error ?? '';
+    if (error && !why) {
+      try { why = (await (error as unknown as { context?: Response }).context?.json())?.error ?? ''; } catch { /* ignore */ }
+    }
+    if (error || why) return setPinMsg((why || 'Could not look that address up.') + ' You can type the numbers yourself.');
+    const d = data as { lat: number; lng: number; formatted: string };
+    setLat(String(d.lat)); setLng(String(d.lng));
+    setPinMsg(`Found: ${d.formatted}. Check it, then Save.`);
+  }
 
   const options = subs.filter((s) => !row.category || s.category === row.category);
 
@@ -35,6 +52,11 @@ function Editor({ row, subs, onDone }: { row: Row; subs: Sub[]; onDone: (msg: st
     }
     if ((row.area_status_override ?? '') !== area) {
       const r = await supabase.rpc('admin_set_area', { p_listing_id: row.id, p_status: area || null, p_reason: areaWhy || null });
+      if (r.error) { setBusy(false); return setErr(errText(r.error)); }
+    }
+    const pinChanged = lat.trim() !== (row.latitude != null ? String(row.latitude) : '') || lng.trim() !== (row.longitude != null ? String(row.longitude) : '');
+    if (pinChanged && lat.trim() && lng.trim()) {
+      const r = await supabase.rpc('admin_set_pin', { p_listing_id: row.id, p_lat: Number(lat), p_lng: Number(lng) });
       if (r.error) { setBusy(false); return setErr(errText(r.error)); }
     }
     const { error } = await supabase.rpc('admin_set_plan', {
@@ -100,6 +122,14 @@ function Editor({ row, subs, onDone }: { row: Row; subs: Sub[]; onDone: (msg: st
           </div>
         )}
       </div>
+      <div className="row" style={{ marginTop: 8 }}>
+        <strong className="small">Map pin</strong>
+        <input style={{ width: 130 }} aria-label="Latitude" placeholder="Latitude" value={lat} onChange={(e) => setLat(e.target.value)} />
+        <input style={{ width: 130 }} aria-label="Longitude" placeholder="Longitude" value={lng} onChange={(e) => setLng(e.target.value)} />
+        <button type="button" className="secondary" onClick={findPin} disabled={!row.address}>Find from address</button>
+        {lat && lng && <a className="small" href={`https://www.google.com/maps?q=${encodeURIComponent(lat + ',' + lng)}`} target="_blank" rel="noopener noreferrer">Check on map</a>}
+      </div>
+      {pinMsg && <p className="small" style={{ margin: '4px 0 0' }}>{pinMsg}</p>}
       <label className="check"><input type="checkbox" checked={founding} onChange={(e) => setFounding(e.target.checked)} /><span>Founding Partner</span></label>
       {err && <Msg kind="err">{err}</Msg>}
       <div style={{ marginTop: 12 }}><button type="button" disabled={busy} onClick={save}>{busy ? 'Saving...' : 'Save'}</button></div>
@@ -134,7 +164,7 @@ export function PlansPage() {
 
   const search = useCallback(async () => {
     let query = supabase.from('listings')
-      .select('id,name,category,subcategory,plan,billing,is_founding,plan_expires_on,area_status,area_status_override,area_reason,town')
+      .select('id,name,category,subcategory,address,latitude,longitude,plan,billing,is_founding,plan_expires_on,area_status,area_status_override,area_reason,town')
       .order('name').limit(25);
     const term = q.trim().replace(/[%,()]/g, ' ');
     if (term) query = query.ilike('name', `%${term}%`);

@@ -1,5 +1,5 @@
 // Generated from lib/legal-content.ts in the app. Edit it there, then copy.
-export const PRIVACY_LAST_UPDATED = 'October 18, 2026';
+export const PRIVACY_LAST_UPDATED = 'October 22, 2026';
 export const PRIVACY_POLICY = `
 This Privacy Policy explains what information the in30A mobile app and the website at in30a.app (together, the "Service") collect, how it is used, and the choices you have. The Service is operated by Visit Like a Local LLC, a Texas limited liability company doing business as in30A ("in30A," "we," "us"), 1821 N Lake Forest Dr, Ste 700 #123, McKinney, TX 75071.
 
@@ -19,7 +19,7 @@ Photos and camera. If you post to the Photo Wall, add a review photo, or submit 
 
 Calendar. If you choose to add an itinerary or event to your calendar, the app asks for calendar access and only creates the events you ask it to. We do not read your existing calendar entries.
 
-AI Concierge. When you use the AI Concierge or AI itinerary help, the messages you type are sent to Google's Gemini API to generate a response, along with in30A listing information needed to answer. Please do not include sensitive personal information in your questions. Google processes this data under its own API terms.
+AI Concierge. When you use the AI Concierge or AI itinerary help, the messages you type are sent to Google's Gemini API to generate a response, along with in30A listing information needed to answer. Please do not include sensitive personal information in your questions. Google processes this data under its own API terms. We also keep the text of each question you ask, with the time and whether we could answer it, and any thumbs up or down you give an answer. This record has no name, email or account information attached. We use it to find questions the app answers poorly and to add better answers.
 
 Push notification data. If you enable notifications, we store a device push token so we can send alerts you opted into (beach flag changes, saved search alerts, deals, events, and booking updates). Some notifications are paid promotions from local businesses; they are only sent to users who have notifications turned on, and you can turn categories off in Settings.
 

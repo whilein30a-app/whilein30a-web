@@ -17,6 +17,7 @@ function Form({ id }: { id: string }) {
   const [menuUrl, setMenuUrl] = useState('');
   const [bookingUrl, setBookingUrl] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  const [hours, setHours] = useState('');
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState('');
@@ -29,6 +30,7 @@ function Form({ id }: { id: string }) {
     setMenuUrl(current?.menu_url ?? '');
     setBookingUrl(current?.booking_url ?? '');
     setLogoUrl(current?.logo_url ?? '');
+    setHours(current?.hours_note ?? '');
   }, [current]);
 
   async function uploadLogo(e: ChangeEvent<HTMLInputElement>) {
@@ -58,10 +60,10 @@ function Form({ id }: { id: string }) {
     setBusy(true);
     // Only send what changed, so a Basic listing can still edit its phone
     // when plan limits are on.
-    const next: Record<string, string> = { description, phone, website, menu_url: menuUrl, booking_url: bookingUrl, logo_url: logoUrl };
+    const next: Record<string, string> = { description, phone, website, menu_url: menuUrl, booking_url: bookingUrl, logo_url: logoUrl, hours_note: hours };
     const was: Record<string, string> = {
       description: current?.description ?? '', phone: current?.phone ?? '', website: current?.website ?? '',
-      menu_url: current?.menu_url ?? '', booking_url: current?.booking_url ?? '', logo_url: current?.logo_url ?? '',
+      menu_url: current?.menu_url ?? '', booking_url: current?.booking_url ?? '', logo_url: current?.logo_url ?? '', hours_note: current?.hours_note ?? '',
     };
     const fields: Record<string, string> = {};
     for (const k of Object.keys(next)) if (next[k] !== was[k]) fields[k] = next[k];
@@ -77,6 +79,7 @@ function Form({ id }: { id: string }) {
   }
 
   const plan = current?.plan ?? 'basic';
+  const locked = plan === 'basic';
 
   return (
     <form className="card" onSubmit={save}>
@@ -86,31 +89,39 @@ function Form({ id }: { id: string }) {
       </div>
       <p className="muted small">
         {current?.address}{current?.category ? ` · ${current.category}` : ''}{current?.subcategory ? ` · ${current.subcategory}` : ''}.
-        To change the name, address, category or subcategory, email hello@in30a.app.
+        To change the name, address, category or subcategory, email hello@in30a.app (we also move your map pin when the address changes).
       </p>
       {plan === 'basic' && (
-        <Msg kind="ok">Your plan is Basic. Logo, description, menu and booking links, a photo gallery, deals and events are part of Premium and above. <Link to="/plan">See plans</Link></Msg>
+        <Msg kind="ok">Your plan is Basic: name, address, map pin, phone and hours. Description, links, logo, deals and events are part of Premium and above. <Link to="/plan">See plans</Link></Msg>
       )}
-      <label htmlFor="d">Description</label>
-      <textarea id="d" maxLength={1500} value={description} onChange={(e) => setDescription(e.target.value)} />
-      <label htmlFor="p">Phone</label>
+      <label htmlFor="p">Phone (visitors tap to call)</label>
       <input id="p" maxLength={40} value={phone} onChange={(e) => setPhone(e.target.value)} />
-      <label htmlFor="w">Website</label>
-      <input id="w" type="url" placeholder="https://" maxLength={300} value={website} onChange={(e) => setWebsite(e.target.value)} />
-      <label htmlFor="m">Menu link</label>
-      <input id="m" type="url" placeholder="https://" maxLength={300} value={menuUrl} onChange={(e) => setMenuUrl(e.target.value)} />
-      <label htmlFor="b">Booking link</label>
-      <input id="b" type="url" placeholder="https://" maxLength={300} value={bookingUrl} onChange={(e) => setBookingUrl(e.target.value)} />
+      <label htmlFor="h">Hours</label>
+      <textarea id="h" maxLength={600} placeholder={'Mon-Fri 9 AM - 5 PM\nSat 10 AM - 4 PM\nSun closed'} value={hours} onChange={(e) => setHours(e.target.value)} />
+      <p className="muted small">One line per day or range. Shown on your listing in the app.</p>
 
-      <label htmlFor="lg">Logo</label>
-      {logoUrl && (
-        <div className="row" style={{ marginBottom: 8 }}>
-          <img src={logoUrl} alt="Your logo" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--line)' }} />
-          <button type="button" className="secondary" onClick={() => setLogoUrl('')}>Remove logo</button>
-        </div>
-      )}
-      <input id="lg" type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadLogo} disabled={uploading} />
-      <p className="muted small">PNG, JPG or WebP, under 2 MB. Save changes to apply it.</p>
+      <h3 style={{ marginBottom: 4 }}>Premium and above {locked && <span className="badge">Locked</span>}</h3>
+      {locked && <p className="muted small">These show in the app only on Premium and above. <Link to="/plan">Upgrade to add them</Link></p>}
+      <fieldset disabled={locked} style={{ border: 0, padding: 0, margin: 0, opacity: locked ? 0.55 : 1 }}>
+        <label htmlFor="d">Description</label>
+        <textarea id="d" maxLength={1500} value={description} onChange={(e) => setDescription(e.target.value)} />
+        <label htmlFor="w">Website</label>
+        <input id="w" type="url" placeholder="https://" maxLength={300} value={website} onChange={(e) => setWebsite(e.target.value)} />
+        <label htmlFor="m">Menu link</label>
+        <input id="m" type="url" placeholder="https://" maxLength={300} value={menuUrl} onChange={(e) => setMenuUrl(e.target.value)} />
+        <label htmlFor="b">Booking link</label>
+        <input id="b" type="url" placeholder="https://" maxLength={300} value={bookingUrl} onChange={(e) => setBookingUrl(e.target.value)} />
+
+        <label htmlFor="lg">Logo</label>
+        {logoUrl && (
+          <div className="row" style={{ marginBottom: 8 }}>
+            <img src={logoUrl} alt="Your logo" style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--line)' }} />
+            <button type="button" className="secondary" onClick={() => setLogoUrl('')}>Remove logo</button>
+          </div>
+        )}
+        <input id="lg" type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadLogo} disabled={uploading || locked} />
+        <p className="muted small">Square works best, at least 400 by 400 pixels. PNG, JPG or WebP, under 2 MB. Save changes to apply it.</p>
+      </fieldset>
 
       {err && <Msg kind="err">{err}</Msg>}
       {ok && <Msg kind="ok">Saved. The app shows the new details right away.</Msg>}

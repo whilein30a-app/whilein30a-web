@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { NeedListing, Msg, errText, PageHeader } from '../components';
 import { useListings } from '../listings';
+import { PaidGate } from '../paid';
 import { centralToday, fmtDate, money, payUrl, PLAN_NAME, PUSH_PRICE, useSetting, WINDOWS } from '../plans';
 import { supabase } from '../supabase';
 
@@ -233,7 +234,7 @@ export function DealsPage() {
   return (
     <>
       <PageHeader title="Deals" sub="Offers that show in the app, with optional push notifications" />
-      <NeedListing>{(id) => <Body listingId={id} />}</NeedListing>
+      <NeedListing>{(id) => <PaidGate what="Deals"><Body listingId={id} /></PaidGate>}</NeedListing>
     </>
   );
 }

@@ -42,7 +42,12 @@ function Editor({ row, subs, onDone }: { row: Row; subs: Sub[]; onDone: (msg: st
     setPinMsg(`Found: ${d.formatted}. Check it, then Save.`);
   }
 
-  const options = subs.filter((s) => !row.category || s.category === row.category);
+  // A free-text category (an old application said "Vacation rental") matches
+  // no parent, so every subcategory is offered, grouped. Saving one sets the
+  // parent category too (sql/098).
+  const known = subs.some((s) => s.category === row.category);
+  const options = subs.filter((s) => !known || s.category === row.category);
+  const groups = Array.from(new Set(options.map((s) => s.category)));
 
   async function save() {
     setErr(''); setBusy(true);
@@ -80,7 +85,13 @@ function Editor({ row, subs, onDone }: { row: Row; subs: Sub[]; onDone: (msg: st
           <label htmlFor={`s${row.id}`}>Subcategory</label>
           <select id={`s${row.id}`} value={sub} onChange={(e) => setSub(e.target.value)}>
             <option value="">None</option>
-            {options.map((s) => (<option key={s.name} value={s.name}>{s.name}</option>))}
+            {groups.length > 1
+              ? groups.map((g) => (
+                  <optgroup key={g} label={g}>
+                    {options.filter((s) => s.category === g).map((s) => (<option key={s.name} value={s.name}>{s.name}</option>))}
+                  </optgroup>
+                ))
+              : options.map((s) => (<option key={s.name} value={s.name}>{s.name}</option>))}
           </select>
         </div>
         <div>

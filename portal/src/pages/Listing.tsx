@@ -92,7 +92,7 @@ function Form({ id }: { id: string }) {
         To change the name, address, category or subcategory, email hello@in30a.app (we also move your map pin when the address changes).
       </p>
       {plan === 'basic' && (
-        <Msg kind="ok">Your plan is Basic: name, address, map pin, phone and hours. Description, links, logo, deals and events are part of Premium and above. <Link to="/plan">See plans</Link></Msg>
+        <Msg kind="ok">Your plan is Basic: name, address, map pin, phone, hours and one cover photo. Description, links, logo, deals and events are part of Premium and above. <Link to="/plan">See plans</Link></Msg>
       )}
       <label htmlFor="p">Phone (visitors tap to call)</label>
       <input id="p" maxLength={40} value={phone} onChange={(e) => setPhone(e.target.value)} />
@@ -120,7 +120,7 @@ function Form({ id }: { id: string }) {
           </div>
         )}
         <input id="lg" type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadLogo} disabled={uploading || locked} />
-        <p className="muted small">Square works best, at least 400 by 400 pixels. PNG, JPG or WebP, under 2 MB. Save changes to apply it.</p>
+        <p className="muted small">Your logo shows next to your name. Square works best, at least 400 by 400 pixels. PNG, JPG or WebP, under 2 MB. Save changes to apply it.</p>
       </fieldset>
 
       {err && <Msg kind="err">{err}</Msg>}
@@ -130,11 +130,59 @@ function Form({ id }: { id: string }) {
   );
 }
 
+/** The one cover photo every plan gets. It is the first photo on the card and the listing in the app. */
+function CoverPhoto({ id }: { id: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [ok, setOk] = useState('');
+
+  useEffect(() => {
+    supabase.from('listing_photos').select('url').eq('listing_id', id).order('sort_order').limit(1)
+      .then(({ data }) => setUrl((data ?? [])[0]?.url ?? null));
+  }, [id]);
+
+  async function upload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setErr(''); setOk('');
+    const ext = TYPES[file.type];
+    if (!ext) return setErr('Use a PNG, JPG or WebP image.');
+    if (file.size > 5 * 1024 * 1024) return setErr('The photo must be under 5 MB.');
+    setBusy(true);
+    const path = `${id}/cover-${Date.now()}.${ext}`;
+    const up = await supabase.storage.from('listing-assets').upload(path, file, { contentType: file.type, upsert: false });
+    if (up.error) { setBusy(false); return setErr(errText(up.error)); }
+    const publicUrl = supabase.storage.from('listing-assets').getPublicUrl(path).data.publicUrl;
+    const { error } = await supabase.rpc('portal_set_cover_photo', { p_listing_id: id, p_url: publicUrl });
+    setBusy(false);
+    if (error) return setErr(errText(error));
+    setUrl(publicUrl);
+    setOk('Cover photo saved. The app shows it right away.');
+  }
+
+  return (
+    <div className="card">
+      <h2 style={{ marginTop: 0 }}>Cover photo</h2>
+      <p className="muted small">Every plan gets one. It is the picture on your card in lists, on the map and at the top of your listing. Use a wide photo of your place, at least 1200 by 800 pixels, JPG or PNG, under 5 MB.</p>
+      {url ? <img src={url} alt="Your cover" style={{ width: '100%', maxWidth: 420, aspectRatio: '3 / 2', objectFit: 'cover', borderRadius: 12, border: '1px solid var(--line)' }} /> : <p className="muted small">No cover photo yet.</p>}
+      <div style={{ marginTop: 10 }}>
+        <label htmlFor="cover">{url ? 'Replace cover photo' : 'Upload a cover photo'}</label>
+        <input id="cover" type="file" accept="image/png,image/jpeg,image/webp" onChange={upload} disabled={busy} />
+      </div>
+      {busy && <p className="muted small">Uploading...</p>}
+      {err && <Msg kind="err">{err}</Msg>}
+      {ok && <Msg kind="ok">{ok}</Msg>}
+    </div>
+  );
+}
+
 export function ListingPage() {
   return (
     <>
       <PageHeader title="Your listing" sub="What visitors see when they open you in the app" />
-      <NeedListing>{(id) => <Form id={id} />}</NeedListing>
+      <NeedListing>{(id) => (<><CoverPhoto id={id} /><Form id={id} /></>)}</NeedListing>
     </>
   );
 }

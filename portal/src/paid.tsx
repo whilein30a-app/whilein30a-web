@@ -10,7 +10,7 @@ export function PaidGate({ what, children }: { what: string; children: ReactNode
   return (
     <div className="card">
       <h2 style={{ marginTop: 0 }}>{what} are part of Premium and above</h2>
-      <p className="muted">Your plan is Basic: name, address, map pin, phone and hours. Upgrade to post {what.toLowerCase()} that show in the app.</p>
+      <p className="muted">Your plan is Basic: name, address, map pin, phone, hours and one cover photo. Upgrade to post {what.toLowerCase()} that show in the app.</p>
       <Link className="btn" to="/plan">See plans</Link>
     </div>
   );

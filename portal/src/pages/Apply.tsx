@@ -2,10 +2,126 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
 import { Msg, errText, PageHeader } from '../components';
 import { useAuth } from '../auth';
+import { useListings } from '../listings';
 import { supabase } from '../supabase';
 
 type Found = { id: string; name: string; address: string | null };
-type App = { id: string; business_name: string; status: 'pending' | 'approved' | 'rejected'; review_note: string | null; created_at: string };
+type App = { id: string; business_name: string; status: 'pending' | 'approved' | 'rejected'; review_note: string | null; created_at: string; claim_listing_id: string | null };
+type Opts = { configured?: boolean; status: string; is_claim: boolean; verified: boolean; email_match: boolean; phone_last4: string | null; owner_conflict: boolean };
+
+const WHY: Record<string, string> = {
+  not_configured: 'Phone codes are not switched on yet. We will review your application by hand instead.',
+  no_phone: 'We do not have a phone number listed for this business. We will review your application by hand.',
+  too_many: 'Too many tries for today. Try again tomorrow, or wait and we will review it by hand.',
+  send_failed: 'We could not send the code. Try the other option (text or call), or wait for our review.',
+  bad_code: 'Enter the 6 digit code.',
+  expired: 'That code has expired. Ask for a new one.',
+  check_failed: 'We could not check that code. Ask for a new one.',
+  approve_failed: 'The code was right, but something went wrong saving it. We will finish it by hand.',
+};
+
+// Proves the applicant owns the business: instant when their email is on the
+// business's own website, otherwise a code to the phone number already listed
+// publicly for it. Anything else waits for a person.
+function VerifyPanel({ appId, onChange }: { appId: string; onChange: () => void }) {
+  const { reload } = useListings();
+  const [opts, setOpts] = useState<Opts | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [sent, setSent] = useState<'sms' | 'call' | null>(null);
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [done, setDone] = useState<'approved' | 'review' | null>(null);
+  const [emailTried, setEmailTried] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    supabase.functions.invoke('verify-ownership', { body: { action: 'options', application_id: appId } }).then(({ data, error }) => {
+      if (!live) return;
+      if (error || !data || (data as { error?: string }).error) setFailed(true);
+      else setOpts(data as Opts);
+    });
+    return () => { live = false; };
+  }, [appId]);
+
+  const finish = useCallback((result: string) => {
+    if (result === 'approved') { setDone('approved'); reload(); } else setDone('review');
+    onChange();
+  }, [onChange, reload]);
+
+  // Email on the business's own domain: approve right away.
+  useEffect(() => {
+    if (!opts || opts.status !== 'pending' || opts.verified || !opts.email_match || emailTried) return;
+    setEmailTried(true);
+    supabase.rpc('portal_verify_email', { p_app_id: appId }).then(({ data, error }) => {
+      if (error) return setMsg(errText(error));
+      if (data === 'approved' || data === 'needs_review') finish(String(data));
+    });
+  }, [opts, emailTried, appId, finish]);
+
+  async function start(channel: 'sms' | 'call') {
+    setBusy(true); setMsg('');
+    const { data, error } = await supabase.functions.invoke('verify-ownership', { body: { action: 'start', application_id: appId, channel } });
+    setBusy(false);
+    const d = (data ?? {}) as { sent?: boolean; error?: string };
+    if (error || !d.sent) return setMsg(WHY[d.error ?? ''] ?? 'We could not send the code. Please try again in a minute.');
+    setSent(channel); setCode('');
+  }
+
+  async function check(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true); setMsg('');
+    const { data, error } = await supabase.functions.invoke('verify-ownership', { body: { action: 'check', application_id: appId, code } });
+    setBusy(false);
+    const d = (data ?? {}) as { verified?: boolean; result?: string; error?: string };
+    if (error) return setMsg('We could not check that code. Please try again.');
+    if (d.error) return setMsg(WHY[d.error] ?? 'We could not check that code.');
+    if (!d.verified) return setMsg('That code is not right. Check it and try again.');
+    finish(d.result ?? 'needs_review');
+  }
+
+  if (failed || !opts) {
+    return failed ? <p className="muted small">We review this by hand, usually within one business day.</p> : null;
+  }
+  if (done === 'approved') {
+    return <Msg kind="ok">Verified. You can now manage this business. <a href="/">Open your dashboard</a>.</Msg>;
+  }
+  if (done === 'review' || opts.verified) {
+    return <Msg kind="ok">Verified. We just need to finish a last check on our side and will email you, usually within one business day.</Msg>;
+  }
+  if (opts.status !== 'pending' || !opts.is_claim) return null;
+  if (opts.email_match) return <p className="muted small">Checking your email against the business website...</p>;
+  if (!opts.configured || !opts.phone_last4) {
+    return <p className="muted small">We review this by hand, usually within one business day.</p>;
+  }
+  return (
+    <div style={{ background: 'var(--soft, #f4f8f8)', borderRadius: 10, padding: 12, margin: '10px 0' }}>
+      <strong>Get approved right away</strong>
+      <p className="small" style={{ margin: '6px 0' }}>
+        We can send a code to the phone number listed publicly for this business, ending in <strong>{opts.phone_last4}</strong>.
+        You need to be able to answer that phone. Not you? Skip this and we will review it by hand.
+      </p>
+      {opts.owner_conflict && <p className="small">This place already has an account. After you verify, we check with you before moving it.</p>}
+      {!sent ? (
+        <div className="row">
+          <button type="button" disabled={busy} onClick={() => start('sms')}>{busy ? 'Sending...' : 'Text me a code'}</button>
+          <button type="button" className="secondary" disabled={busy} onClick={() => start('call')}>Call me with a code</button>
+        </div>
+      ) : (
+        <form onSubmit={check}>
+          <label htmlFor={`code${appId}`}>Enter the code we {sent === 'sms' ? 'texted' : 'read out'} to the number ending in {opts.phone_last4}</label>
+          <input id={`code${appId}`} inputMode="numeric" autoComplete="one-time-code" maxLength={10} value={code} onChange={(e) => setCode(e.target.value)} />
+          <div className="row" style={{ marginTop: 8 }}>
+            <button type="submit" disabled={busy || code.replace(/\D/g, '').length < 4}>{busy ? 'Checking...' : 'Verify'}</button>
+            <button type="button" className="secondary" disabled={busy} onClick={() => start(sent)}>Send a new code</button>
+          </div>
+        </form>
+      )}
+      {msg && <Msg kind="err">{msg}</Msg>}
+    </div>
+  );
+}
+
 
 export function ApplyPage() {
   const { session } = useAuth();
@@ -31,7 +147,7 @@ export function ApplyPage() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('business_applications').select('id,business_name,status,review_note,created_at')
+    const { data } = await supabase.from('business_applications').select('id,business_name,status,review_note,created_at,claim_listing_id')
       .order('created_at', { ascending: false }).limit(20);
     setApps((data ?? []) as App[]);
   }, []);
@@ -46,7 +162,7 @@ export function ApplyPage() {
     const term = q.trim().replace(/[%_,()]/g, ' ');
     if (term.length < 2) { setFound([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await supabase.from('listings').select('id,name,address').ilike('name', `%${term}%`).limit(8);
+      const { data } = await supabase.from('listings').select('id,name,address').or(`name.ilike.%${term}%,aka.ilike.%${term}%`).limit(8);
       setFound((data ?? []) as Found[]);
     }, 250);
     return () => clearTimeout(t);
@@ -75,7 +191,7 @@ export function ApplyPage() {
     });
     setBusy(false);
     if (error) return setErr(/violates|limit|pending/i.test(error.message) ? 'You already have applications waiting. We will review them soon.' : errText(error));
-    setOk('Thanks. We will review this and email you, usually within one business day.');
+    setOk(mode === 'claim' ? 'Thanks. Verify below to get approved right away, or we will review it and email you, usually within one business day.' : 'Thanks. We will review this and email you, usually within one business day.');
     setClaim(null); setQ(''); setName(''); setNotes(''); setWebsite(''); setDescription(''); setAddress(''); setCategory(''); setSubcategory(''); setAgree(false);
     load();
   }
@@ -144,6 +260,7 @@ export function ApplyPage() {
         <div className="card" key={a.id}>
           <div className="row spread"><strong>{a.business_name}</strong><span className={`badge ${a.status}`}>{a.status}</span></div>
           {a.review_note && <p className="muted small">{a.review_note}</p>}
+          {a.status === 'pending' && a.claim_listing_id && <VerifyPanel appId={a.id} onChange={load} />}
         </div>
       ))}
     </>

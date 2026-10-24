@@ -8,10 +8,11 @@ type AppRow = {
   id: string; business_name: string; contact_name: string | null; phone: string | null; email: string | null; notes: string | null;
   claim_listing_id: string | null; claim_address: string | null; claim_has_pin: boolean | null; claim_subcategory: string | null;
   new_listing: Record<string, string> | null; created_at: string;
+  verify_method: 'email_domain' | 'phone_code' | null; verified_at: string | null; owner_email: string | null; claim_phone: string | null; claim_website: string | null;
 };
 type PlanReq = { id: string; listing_name: string; plan: string; billing: string; created_at: string; email: string | null };
 type Sub = { name: string; category: string };
-type Pin = { lat: string; lng: string; noPin: boolean; sub: string };
+type Pin = { lat: string; lng: string; noPin: boolean; sub: string; replace?: boolean };
 type DealRow = { id: string; listing_name: string; title: string; discount_text: string; valid_until: string | null; push_type: string; push_date: string | null; push_window: string | null };
 type EventRow = { id: string; listing_id: string; title: string; venue_name: string | null; start_date: string; start_time: string | null; ticket_url: string | null };
 
@@ -131,13 +132,34 @@ export function ReviewPage() {
         const latN = Number(pin.lat), lngN = Number(pin.lng);
         const pinBad = pinSet && (!Number.isFinite(latN) || !Number.isFinite(lngN) || Math.abs(latN) > 90 || Math.abs(lngN) > 180);
         const need = !hasPin && !pinSet && !pin.noPin;
-        const blocked = pinBad ? 'The pin numbers are not valid.' : need ? 'Set the map pin before you can approve. Without one the place is hidden in the app.' : undefined;
+        const blocked = pinBad ? 'The pin numbers are not valid.' : a.owner_email && !pin.replace ? 'This place already has an owner. Tick Replace the current owner to approve, or reject.' : need ? 'Set the map pin before you can approve. Without one the place is hidden in the app.' : undefined;
         const category = nl?.category ?? '';
         const subOptions = subs.filter((x) => !category || x.category === category);
         return (
           <div className="card" key={a.id}>
             <div className="row spread"><strong>{a.business_name}</strong><span className="muted small">{new Date(a.created_at).toLocaleDateString()}</span></div>
             <p className="muted small">{isNew ? 'New listing' : 'Claims an existing listing'}</p>
+            {a.verified_at && (
+              <p className="small" style={{ margin: '4px 0' }}>
+                <span className="badge approved">Verified</span>{' '}
+                {a.verify_method === 'phone_code' ? 'They answered a code sent to the number listed publicly for this business.' : 'Their email is on the business website domain.'}
+                {' '}It was not approved automatically because of the notes below.
+              </p>
+            )}
+            {!isNew && !a.verified_at && (
+              <p className="muted small" style={{ margin: '4px 0' }}>
+                Not verified. Check their email against {a.claim_website ?? 'the website (none listed)'}, or call {a.claim_phone ?? 'the business (no phone listed)'} yourself before you approve.
+              </p>
+            )}
+            {a.owner_email && (
+              <div style={{ background: '#fff6e5', borderRadius: 10, padding: 10, margin: '8px 0' }}>
+                <strong className="small">Already managed by {a.owner_email}</strong>
+                <label className="check" style={{ marginTop: 6 }}>
+                  <input type="checkbox" checked={!!pin.replace} onChange={(e) => setPins((m) => ({ ...m, [a.id]: { ...pinOf(a.id), replace: e.target.checked } }))} />
+                  <span>Replace the current owner with this applicant. The old owner loses access.</span>
+                </label>
+              </div>
+            )}
             <p className="small">{[a.contact_name, a.phone, a.email].filter(Boolean).join(' · ')}</p>
             {isNew ? (
               <ul className="small" style={{ paddingLeft: 18 }}>
@@ -163,7 +185,7 @@ export function ReviewPage() {
             <Actions blocked={blocked} onDo={(yes, note) => review('admin_review_application', {
                 p_id: a.id, p_approve: yes, p_note: note,
                 p_lat: yes && pinSet ? latN : null, p_lng: yes && pinSet ? lngN : null,
-                p_no_pin: yes && pin.noPin, p_subcategory: pin.sub || null,
+                p_no_pin: yes && pin.noPin, p_subcategory: pin.sub || null, p_replace_owner: yes && !!pin.replace,
               },
               yes
                 ? `Approved. ${a.business_name} now has its pin and the applicant was emailed. To give it a plan, open Admin > Plans and slots.`

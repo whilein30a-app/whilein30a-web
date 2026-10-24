@@ -23,6 +23,9 @@ export function AdminSettingsPage() {
   const [err, setErr] = useState('');
   const [windowsRaw, setWindowsRaw] = useState<any>(null);
   const [nearbyRaw, setNearbyRaw] = useState<any>(null);
+  const [seasonMode, setSeasonMode] = useState<'auto' | 'summer' | 'offSeason'>('auto');
+  const [summerStart, setSummerStart] = useState('03-01');
+  const [summerEnd, setSummerEnd] = useState('09-30');
 
   useEffect(() => {
     supabase.from('app_settings').select('key,value').then(({ data, error }) => {
@@ -37,6 +40,9 @@ export function AdminSettingsPage() {
       setNearbyRaw(m.nearby ?? null);
       setRadius(m.nearby?.radius_miles ?? 2);
       setFresh(m.nearby?.fresh_hours ?? 3);
+      setSeasonMode(m.transit_season?.mode ?? 'auto');
+      setSummerStart(m.transit_season?.summer_start ?? '03-01');
+      setSummerEnd(m.transit_season?.summer_end ?? '09-30');
     });
   }, []);
 
@@ -73,11 +79,19 @@ export function AdminSettingsPage() {
     run(save('nearby', { ...(nearbyRaw ?? {}), radius_miles: radius, fresh_hours: fresh }), 'Nearby settings saved.');
   }
 
+  function saveSeason(e: FormEvent) {
+    e.preventDefault();
+    if (seasonMode === 'auto' && (!/^\d{2}-\d{2}$/.test(summerStart) || !/^\d{2}-\d{2}$/.test(summerEnd))) {
+      setErr('Pick both summer dates.'); return;
+    }
+    run(save('transit_season', { mode: seasonMode, summer_start: summerStart, summer_end: summerEnd }), 'Transit season saved. The app uses it the next time someone opens Transit.');
+  }
+
   const setLink = (k: string, v: string) => setLinks((l) => ({ ...l, [k]: v }));
 
   return (
     <>
-      <PageHeader title="App settings" sub="Payment links, plan limits, push times and Nearby" />
+      <PageHeader title="App settings" sub="Payment links, plan limits, transit season, push times and Nearby" />
       {msg && <Msg kind="ok">{msg}</Msg>}
       {err && <Msg kind="err">{err}</Msg>}
 
@@ -127,6 +141,32 @@ export function AdminSettingsPage() {
           </div>
         </div>
         <div style={{ marginTop: 16 }}><button type="submit">Save links</button></div>
+      </form>
+
+      <form className="card" onSubmit={saveSeason}>
+        <h2 style={{ marginTop: 0 }}>Transit season</h2>
+        <p className="muted small">
+          Picks which park and ride schedule the app shows. Leave it on Automatic and the app switches by date every year. When the county
+          announces a different start date, change the dates below, or force a season right away.
+        </p>
+        <label htmlFor="sm2">Schedule to show</label>
+        <select id="sm2" value={seasonMode} onChange={(e) => setSeasonMode(e.target.value as 'auto' | 'summer' | 'offSeason')}>
+          <option value="auto">Automatic, by the dates below</option>
+          <option value="summer">Always summer</option>
+          <option value="offSeason">Always off-season</option>
+        </select>
+        <div className="grid" style={{ marginTop: 8, opacity: seasonMode === 'auto' ? 1 : 0.5 }}>
+          <div>
+            <label htmlFor="ss">Summer starts (month and day)</label>
+            <input id="ss" type="date" disabled={seasonMode !== 'auto'} value={`2000-${summerStart}`} onChange={(e) => e.target.value && setSummerStart(e.target.value.slice(5))} />
+          </div>
+          <div>
+            <label htmlFor="se">Summer ends, last day (month and day)</label>
+            <input id="se" type="date" disabled={seasonMode !== 'auto'} value={`2000-${summerEnd}`} onChange={(e) => e.target.value && setSummerEnd(e.target.value.slice(5))} />
+          </div>
+        </div>
+        <p className="muted small">Only the month and day count, the year is ignored. Off-season runs from the day after summer ends until summer starts again. Routes that are not on a season's schedule are hidden in the app for that season.</p>
+        <div style={{ marginTop: 16 }}><button type="submit">Save</button></div>
       </form>
 
       <form className="card" onSubmit={saveWindows}>

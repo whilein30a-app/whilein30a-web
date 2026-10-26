@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Msg, errText, PageHeader } from '../components';
 import { useAuth } from '../auth';
 import { useListings } from '../listings';
+import { acceptBusinessTerms, BusinessTermsCheck } from '../terms';
 import { supabase } from '../supabase';
 
 type Found = { id: string; name: string; address: string | null };
@@ -138,6 +139,7 @@ export function ApplyPage() {
   const [description, setDescription] = useState('');
   const [role, setRole] = useState('Owner');
   const [agree, setAgree] = useState(false);
+  const [termsOk, setTermsOk] = useState(false);
   const [contact, setContact] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
@@ -175,8 +177,13 @@ export function ApplyPage() {
     if (mode === 'claim' && !claim) return setErr('Search for your business and pick it from the list.');
     if (mode === 'new' && (!category || !subcategory)) return setErr('Choose a category and a subcategory so visitors can find you.');
     if (mode === 'new' && address.trim().length < 6) return setErr('Enter the street address. If you are a mobile service with no storefront, write "Mobile service" and the town you are based in.');
-    if (!agree) return setErr('Please confirm you are allowed to manage this business and agree to the terms.');
+    if (!agree) return setErr('Please confirm you are allowed to manage this business.');
+    if (!termsOk) return setErr('Please agree to the in30A Business Listing Terms.');
     setBusy(true);
+    // Stores the date and Terms version for this claim. The database refuses
+    // the application without it (sql/100).
+    const termsErr = await acceptBusinessTerms('claim', mode === 'claim' ? claim!.id : null);
+    if (termsErr) { setBusy(false); return setErr(termsErr); }
     const { error } = await supabase.from('business_applications').insert({
       user_id: session.user.id,
       business_name: mode === 'claim' ? claim!.name : name.trim(),
@@ -192,7 +199,7 @@ export function ApplyPage() {
     setBusy(false);
     if (error) return setErr(/violates|limit|pending/i.test(error.message) ? 'You already have applications waiting. We will review them soon.' : errText(error));
     setOk(mode === 'claim' ? 'Thanks. Verify below to get approved right away, or we will review it and email you, usually within one business day.' : 'Thanks. We will review this and email you, usually within one business day.');
-    setClaim(null); setQ(''); setName(''); setNotes(''); setWebsite(''); setDescription(''); setAddress(''); setCategory(''); setSubcategory(''); setAgree(false);
+    setClaim(null); setQ(''); setName(''); setNotes(''); setWebsite(''); setDescription(''); setAddress(''); setCategory(''); setSubcategory(''); setAgree(false); setTermsOk(false);
     load();
   }
 
@@ -249,7 +256,8 @@ export function ApplyPage() {
         <input id="ph" maxLength={40} value={phone} onChange={(e) => setPhone(e.target.value)} />
         <label htmlFor="no">Anything we should know? (optional)</label>
         <textarea id="no" maxLength={1000} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        <label className="check"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /><span>I am allowed to manage this business and I agree to the <a href="/privacy" target="_blank" rel="noopener noreferrer">terms and privacy policy</a>.</span></label>
+        <label className="check"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /><span>I am allowed to manage this business. See our <a href="/privacy" target="_blank" rel="noopener noreferrer">privacy policy</a>.</span></label>
+        <BusinessTermsCheck id="claim-terms" checked={termsOk} onChange={setTermsOk} />
         {err && <Msg kind="err">{err}</Msg>}
         {ok && <Msg kind="ok">{ok}</Msg>}
         <div style={{ marginTop: 18 }}><button type="submit" disabled={busy}>{busy ? 'Sending...' : 'Send for approval'}</button></div>

@@ -26,6 +26,9 @@ export function AdminSettingsPage() {
   const [seasonMode, setSeasonMode] = useState<'auto' | 'summer' | 'offSeason'>('auto');
   const [summerStart, setSummerStart] = useState('03-01');
   const [summerEnd, setSummerEnd] = useState('09-30');
+  const [termsRaw, setTermsRaw] = useState<any>(null);
+  const [termsVersion, setTermsVersion] = useState('');
+  const [termsWas, setTermsWas] = useState('');
 
   useEffect(() => {
     supabase.from('app_settings').select('key,value').then(({ data, error }) => {
@@ -43,6 +46,9 @@ export function AdminSettingsPage() {
       setSeasonMode(m.transit_season?.mode ?? 'auto');
       setSummerStart(m.transit_season?.summer_start ?? '03-01');
       setSummerEnd(m.transit_season?.summer_end ?? '09-30');
+      setTermsRaw(m.terms ?? null);
+      setTermsVersion(m.terms?.version ?? '');
+      setTermsWas(m.terms?.version ?? '');
     });
   }, []);
 
@@ -87,11 +93,22 @@ export function AdminSettingsPage() {
     run(save('transit_season', { mode: seasonMode, summer_start: summerStart, summer_end: summerEnd }), 'Transit season saved. The app uses it the next time someone opens Transit.');
   }
 
+  function saveTerms(e: FormEvent) {
+    e.preventDefault();
+    const v = termsVersion.trim();
+    if (!v || v.length > 40) { setErr('Enter the Terms version, for example the "Last updated" date 2026-10-23.'); return; }
+    if (v === termsWas) { setMsg('Nothing changed.'); return; }
+    if (!window.confirm('Change the Terms version? Every app user and every business will be asked to agree again.')) return;
+    const next = { terms_url: 'https://in30a.app/terms', privacy_url: 'https://in30a.app/privacy', ...(termsRaw ?? {}), version: v };
+    run(save('terms', next), 'Terms version saved. Everyone is asked to agree to the new Terms the next time they open the app or the portal.');
+    setTermsWas(v);
+  }
+
   const setLink = (k: string, v: string) => setLinks((l) => ({ ...l, [k]: v }));
 
   return (
     <>
-      <PageHeader title="App settings" sub="Payment links, plan limits, transit season, push times and Nearby" />
+      <PageHeader title="App settings" sub="Payment links, plan limits, Terms version, transit season, push times and Nearby" />
       {msg && <Msg kind="ok">{msg}</Msg>}
       {err && <Msg kind="err">{err}</Msg>}
 
@@ -141,6 +158,17 @@ export function AdminSettingsPage() {
           </div>
         </div>
         <div style={{ marginTop: 16 }}><button type="submit">Save links</button></div>
+      </form>
+
+      <form className="card" onSubmit={saveTerms}>
+        <h2 style={{ marginTop: 0 }}>Terms of Use version</h2>
+        <p className="muted small">
+          Every agreement is stored with this version and the date. When you publish new Terms at in30a.app/terms, change the version here
+          (use the page's "Last updated" date). Every app user and every business is then asked once to agree before continuing.
+        </p>
+        <label htmlFor="tv">Current version</label>
+        <input id="tv" maxLength={40} value={termsVersion} onChange={(e) => setTermsVersion(e.target.value)} placeholder="2026-10-23" />
+        <div style={{ marginTop: 16 }}><button type="submit">Save</button></div>
       </form>
 
       <form className="card" onSubmit={saveSeason}>

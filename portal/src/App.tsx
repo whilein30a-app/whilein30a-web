@@ -22,6 +22,7 @@ import { PlanPage } from './pages/Plan';
 import { PrivacyPage } from './pages/Privacy';
 import { SettingsPage } from './pages/Settings';
 import { SignupPage } from './pages/Signup';
+import { BusinessTermsGate } from './terms';
 
 function BusinessCard() {
   const { current, listings, select } = useListings();
@@ -138,7 +139,7 @@ function Shell() {
       )}
 
       <div className="content">
-        <main><Outlet /></main>
+        <main><BusinessTermsGate><Outlet /></BusinessTermsGate></main>
         <footer>
           <Link to="/privacy">Privacy Policy</Link> · Visit Like a Local LLC d/b/a in30A · <a href="mailto:hello@in30a.app">hello@in30a.app</a>
         </footer>

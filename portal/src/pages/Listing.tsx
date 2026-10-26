@@ -5,6 +5,7 @@ import { NeedListing, Msg, errText, PageHeader } from '../components';
 import { useListings } from '../listings';
 import { PLAN_NAME } from '../plans';
 import { supabase } from '../supabase';
+import { acceptBusinessTerms, BusinessTermsCheck } from '../terms';
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const TYPES: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
@@ -20,6 +21,7 @@ function Form({ id }: { id: string }) {
   const [hours, setHours] = useState('');
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [logoTerms, setLogoTerms] = useState(false);
   const [err, setErr] = useState('');
   const [ok, setOk] = useState(false);
 
@@ -41,7 +43,10 @@ function Form({ id }: { id: string }) {
     const ext = TYPES[file.type];
     if (!ext) return setErr('Use a PNG, JPG or WebP image.');
     if (file.size > MAX_BYTES) return setErr('The image must be under 2 MB.');
+    if (!logoTerms) return setErr('Please agree to the in30A Business Listing Terms before you upload.');
     setUploading(true);
+    const termsErr = await acceptBusinessTerms('upload', id);
+    if (termsErr) { setUploading(false); return setErr(termsErr); }
     const path = `${id}/logo-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from('listing-assets').upload(path, file, { contentType: file.type, upsert: false });
     if (error) {
@@ -51,6 +56,7 @@ function Form({ id }: { id: string }) {
     const url = supabase.storage.from('listing-assets').getPublicUrl(path).data.publicUrl;
     setLogoUrl(url);
     setUploading(false);
+    setLogoTerms(false);
   }
 
   async function save(e: FormEvent) {
@@ -119,7 +125,8 @@ function Form({ id }: { id: string }) {
             <button type="button" className="secondary" onClick={() => setLogoUrl('')}>Remove logo</button>
           </div>
         )}
-        <input id="lg" type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadLogo} disabled={uploading || locked} />
+        {!locked && <BusinessTermsCheck id="logo-terms" checked={logoTerms} onChange={setLogoTerms} />}
+        <input id="lg" type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadLogo} disabled={uploading || locked || !logoTerms} />
         <p className="muted small">Your logo shows next to your name. Square works best, at least 400 by 400 pixels. PNG, JPG or WebP, under 2 MB. Save changes to apply it.</p>
       </fieldset>
 
@@ -134,6 +141,7 @@ function Form({ id }: { id: string }) {
 function CoverPhoto({ id }: { id: string }) {
   const [url, setUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [coverTerms, setCoverTerms] = useState(false);
   const [err, setErr] = useState('');
   const [ok, setOk] = useState('');
 
@@ -150,7 +158,10 @@ function CoverPhoto({ id }: { id: string }) {
     const ext = TYPES[file.type];
     if (!ext) return setErr('Use a PNG, JPG or WebP image.');
     if (file.size > 5 * 1024 * 1024) return setErr('The photo must be under 5 MB.');
+    if (!coverTerms) return setErr('Please agree to the in30A Business Listing Terms before you upload.');
     setBusy(true);
+    const termsErr = await acceptBusinessTerms('upload', id);
+    if (termsErr) { setBusy(false); return setErr(termsErr); }
     const path = `${id}/cover-${Date.now()}.${ext}`;
     const up = await supabase.storage.from('listing-assets').upload(path, file, { contentType: file.type, upsert: false });
     if (up.error) { setBusy(false); return setErr(errText(up.error)); }
@@ -159,6 +170,7 @@ function CoverPhoto({ id }: { id: string }) {
     setBusy(false);
     if (error) return setErr(errText(error));
     setUrl(publicUrl);
+    setCoverTerms(false);
     setOk('Cover photo saved. The app shows it right away.');
   }
 
@@ -169,7 +181,8 @@ function CoverPhoto({ id }: { id: string }) {
       {url ? <img src={url} alt="Your cover" style={{ width: '100%', maxWidth: 420, aspectRatio: '3 / 2', objectFit: 'cover', borderRadius: 12, border: '1px solid var(--line)' }} /> : <p className="muted small">No cover photo yet.</p>}
       <div style={{ marginTop: 10 }}>
         <label htmlFor="cover">{url ? 'Replace cover photo' : 'Upload a cover photo'}</label>
-        <input id="cover" type="file" accept="image/png,image/jpeg,image/webp" onChange={upload} disabled={busy} />
+        <BusinessTermsCheck id="cover-terms" checked={coverTerms} onChange={setCoverTerms} />
+        <input id="cover" type="file" accept="image/png,image/jpeg,image/webp" onChange={upload} disabled={busy || !coverTerms} />
       </div>
       {busy && <p className="muted small">Uploading...</p>}
       {err && <Msg kind="err">{err}</Msg>}

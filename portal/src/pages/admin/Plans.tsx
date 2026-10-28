@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { Msg, errText, PageHeader } from '../../components';
 import { PLAN_NAME, type PlanId } from '../../plans';
@@ -76,7 +77,7 @@ function Editor({ row, subs, onDone }: { row: Row; subs: Sub[]; onDone: (msg: st
   return (
     <div className="card">
       <div className="row spread">
-        <div><strong>{row.name}</strong> <span className="muted small">{row.category}{row.town ? ` · ${row.town}` : ''}</span></div>
+        <div><Link to={`/admin/business/${row.id}`}><strong>{row.name}</strong></Link> <span className="muted small">{row.category}{row.town ? ` · ${row.town}` : ''}</span></div>
         <span className={`badge ${row.area_status === 'outside' ? 'rejected' : 'approved'}`}>{AREA_LABEL[row.area_status ?? ''] ?? 'Not checked'}</span>
       </div>
       {row.area_reason && <p className="muted small" style={{ margin: '4px 0 0' }}>Area: {row.area_reason}</p>}

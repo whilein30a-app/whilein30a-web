@@ -6,6 +6,9 @@ import { useListings } from '../listings';
 import { PLAN_NAME } from '../plans';
 import { supabase } from '../supabase';
 import { acceptBusinessTerms, BusinessTermsCheck } from '../terms';
+import QRCode from 'qrcode';
+import { rateUrl } from '../reviews';
+import { ChangeRequests, Gallery, usePhotos, useLimited, VisitorPreview } from './listing-extras';
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const TYPES: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
@@ -138,7 +141,7 @@ function Form({ id }: { id: string }) {
 }
 
 /** The one cover photo every plan gets. It is the first photo on the card and the listing in the app. */
-function CoverPhoto({ id }: { id: string }) {
+function CoverPhoto({ id, onChanged }: { id: string; onChanged?: () => void }) {
   const [url, setUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [coverTerms, setCoverTerms] = useState(false);
@@ -171,6 +174,7 @@ function CoverPhoto({ id }: { id: string }) {
     if (error) return setErr(errText(error));
     setUrl(publicUrl);
     setCoverTerms(false);
+    onChanged?.();
     setOk('Cover photo saved. The app shows it right away.');
   }
 
@@ -191,11 +195,57 @@ function CoverPhoto({ id }: { id: string }) {
   );
 }
 
+// A printable QR code that opens this listing's rating screen (Trello A43).
+function ReviewQr({ id }: { id: string }) {
+  const { current } = useListings();
+  const [url, setUrl] = useState('');
+  const [img, setImg] = useState('');
+  useEffect(() => {
+    let live = true;
+    rateUrl(id).then(async (u) => {
+      const data = await QRCode.toDataURL(u, { width: 600, margin: 2, color: { dark: '#0B3954', light: '#FFFFFF' } });
+      if (live) { setUrl(u); setImg(data); }
+    });
+    return () => { live = false; };
+  }, [id]);
+  const file = `in30A-rate-${(current?.name ?? 'listing').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`;
+  return (
+    <div className="card">
+      <h2 style={{ marginTop: 0 }}>Get reviews from your customers</h2>
+      <p className="muted small">
+        Print this code for your counter, menu or receipts. Scanning it opens your page in the in30A app on the rating screen.
+        Reviews come from visitors with a confirmed phone number, and you cannot review your own business.
+      </p>
+      {img ? <img src={img} alt="QR code to rate this business" style={{ width: 200, height: 200, border: '1px solid var(--line)', borderRadius: 12 }} /> : <p className="muted small">Making your code...</p>}
+      {url && <p className="small" style={{ wordBreak: 'break-all' }}>{url}</p>}
+      {img && (
+        <div className="row">
+          <a className="btn secondary" href={img} download={file}>Download PNG</a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ListingBody({ id }: { id: string }) {
+  const { photos, reload } = usePhotos(id);
+  const limited = useLimited();
+  return (
+    <>
+      <VisitorPreview id={id} photos={photos} />
+      {limited ? <CoverPhoto id={id} onChanged={reload} /> : <Gallery id={id} photos={photos} reload={reload} />}
+      <Form id={id} />
+      <ReviewQr id={id} />
+      <ChangeRequests id={id} />
+    </>
+  );
+}
+
 export function ListingPage() {
   return (
     <>
       <PageHeader title="Your listing" sub="What visitors see when they open you in the app" />
-      <NeedListing>{(id) => (<><CoverPhoto id={id} /><Form id={id} /></>)}</NeedListing>
+      <NeedListing>{(id) => <ListingBody id={id} />}</NeedListing>
     </>
   );
 }

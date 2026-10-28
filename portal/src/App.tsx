@@ -1,6 +1,6 @@
 import {
-  BarChart3, Bell, CalendarDays, ChevronRight, ClipboardCheck, Crown, Gauge, LayoutDashboard, LogOut, Megaphone,
-  Images, Menu, MessageCircleQuestion, MoreHorizontal, Plus, Settings, SlidersHorizontal, Store, Tag, X,
+  BarChart3, Bell, Building2, CalendarDays, ChevronRight, ClipboardCheck, Crown, Gauge, LayoutDashboard, LogOut, Megaphone,
+  Images, ListChecks, Menu, MessageCircleQuestion, MoreHorizontal, Plus, Settings, SlidersHorizontal, Star, Store, Tag, Users, X, MessageSquareText,
 } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
@@ -22,6 +22,7 @@ import { PlanPage } from './pages/Plan';
 import { PrivacyPage } from './pages/Privacy';
 import { SettingsPage } from './pages/Settings';
 import { SignupPage } from './pages/Signup';
+import { RatePage } from './pages/Rate';
 import { BusinessTermsGate } from './terms';
 
 function BusinessCard() {
@@ -91,6 +92,11 @@ function Side({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
               <L to="/admin/analytics" icon={<BarChart3 size={17} />}>Analytics</L>
               <L to="/admin/questions" icon={<MessageCircleQuestion size={17} />}>Ask 30A questions</L>
               <L to="/admin/photos" icon={<Images size={17} />}>Photo Wall</L>
+              <L to="/admin/reviews" icon={<Star size={17} />}>Reviews</L>
+              <L to="/admin/changes" icon={<MessageSquareText size={17} />}>Change requests</L>
+              <L to="/admin/business" icon={<Building2 size={17} />}>Businesses</L>
+              <L to="/admin/missing" icon={<ListChecks size={17} />}>Missing details</L>
+              <L to="/admin/users" icon={<Users size={17} />}>Users</L>
               <L to="/admin/settings" icon={<SlidersHorizontal size={17} />}>App settings</L>
             </div>
           )}
@@ -182,6 +188,7 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/rate/:id" element={<RatePage />} />
         <Route element={<RequireAuth />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/listing" element={<ListingPage />} />

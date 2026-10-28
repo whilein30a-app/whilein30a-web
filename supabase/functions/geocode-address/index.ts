@@ -1,12 +1,15 @@
 // Supabase Edge Function: geocode-address
 //
-// Admin-only. Turns a street address into a map pin so the Review queue can
-// fill the pin before a business is approved. Looks at the address only (not the
+// Admin-only. Turns a street address into a map pin so the Review queue and
+// Admin > Missing details can set a pin. Looks at the address only (not the
 // business name) and accepts a result only inside a box around 30A.
 //
-// Deploy:  supabase functions deploy geocode-address
-// Secret:  GOOGLE_PLACES_API_KEY  (already set for the import script? set it here too:
-//          supabase secrets set GOOGLE_PLACES_API_KEY=...)
+// A17: uses Mapbox's PERMANENT geocoding (the pin is stored, and only permanent
+// results may be stored). Google is no longer used here.
+//
+// Deploy:  npx supabase functions deploy geocode-address
+// Secret:  MAPBOX_GEOCODING_TOKEN  (type it in your own terminal, never in chat:
+//          npx supabase secrets set MAPBOX_GEOCODING_TOKEN=...)
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -28,8 +31,8 @@ serve(async (req) => {
   const { data: isAdmin } = await supa.rpc('is_portal_admin');
   if (isAdmin !== true) return out({ error: 'Not allowed' }, 403);
 
-  const key = Deno.env.get('GOOGLE_PLACES_API_KEY');
-  if (!key) return out({ error: 'GOOGLE_PLACES_API_KEY is not set on this function' }, 500);
+  const token = Deno.env.get('MAPBOX_GEOCODING_TOKEN');
+  if (!token) return out({ error: 'MAPBOX_GEOCODING_TOKEN is not set on this function' }, 500);
 
   let address = '';
   try {
@@ -39,21 +42,26 @@ serve(async (req) => {
   }
   if (address.length < 6) return out({ error: 'Enter a street address first' }, 400);
 
-  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
-    method: 'POST',
-    headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'places.location,places.formattedAddress', 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      textQuery: address,
-      maxResultCount: 1,
-      locationBias: { rectangle: { low: { latitude: BOX.south, longitude: BOX.west }, high: { latitude: BOX.north, longitude: BOX.east } } },
-    }),
+  const params = new URLSearchParams({
+    q: address.replace(/;/g, ','),
+    access_token: token,
+    permanent: 'true',
+    autocomplete: 'false',
+    country: 'us',
+    types: 'address',
+    limit: '1',
+    bbox: `${BOX.west},${BOX.south},${BOX.east},${BOX.north}`,
+    proximity: '-86.15,30.32',
   });
-  if (!res.ok) return out({ error: `Google answered ${res.status}` }, 502);
-  const place = (await res.json()).places?.[0];
-  const loc = place?.location;
-  if (!loc) return out({ error: 'Address not found' }, 404);
-  if (loc.latitude < BOX.south || loc.latitude > BOX.north || loc.longitude < BOX.west || loc.longitude > BOX.east) {
-    return out({ error: `That address is outside the 30A area (${place.formattedAddress ?? ''})` }, 422);
+  const res = await fetch(`https://api.mapbox.com/search/geocode/v6/forward?${params}`);
+  if (!res.ok) return out({ error: `Mapbox answered ${res.status}` }, 502);
+  const f = (await res.json()).features?.[0];
+  const [lng, lat] = f?.geometry?.coordinates ?? [];
+  if (typeof lat !== 'number' || typeof lng !== 'number') return out({ error: 'Address not found' }, 404);
+  const formatted = String(f.properties?.full_address ?? '').replace(/, United States$/, '');
+  if (lat < BOX.south || lat > BOX.north || lng < BOX.west || lng > BOX.east) {
+    return out({ error: `That address is outside the 30A area (${formatted})` }, 422);
   }
-  return out({ lat: loc.latitude, lng: loc.longitude, formatted: place.formattedAddress ?? '' });
+  const confidence = f.properties?.match_code?.confidence ?? 'unknown';
+  return out({ lat, lng, formatted, confidence });
 });

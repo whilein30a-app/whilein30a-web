@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Empty, Msg, PageHeader, errText } from '../../components';
 import { supabase } from '../../supabase';
 
-type Post = { id: string; photo_url: string; caption: string | null; location_name: string | null; created_at: string; is_hidden: boolean; email: string | null };
+type Post = { id: string; photo_url: string; caption: string | null; location_name: string | null; created_at: string; is_hidden: boolean; email: string | null; user_id: string | null; posting_banned: boolean | null };
 
 const when = (iso: string) =>
   new Date(iso).toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -32,6 +32,17 @@ export function PhotoWallPage() {
     load();
   }
 
+  async function ban(userId: string | null, on: boolean) {
+    if (!userId) return;
+    const reason = on ? window.prompt('Why is this person banned from posting? (saved in the audit log)') : '';
+    if (on && !reason) return;
+    setBusy(userId);
+    const { error } = await supabase.rpc('admin_set_posting_ban', { p_user: userId, p_ban: on, p_reason: reason || null });
+    setBusy('');
+    if (error) return setErr(errText(error));
+    load();
+  }
+
   return (
     <>
       <PageHeader title="Photo Wall" sub="Approve new photos before visitors see them" />
@@ -53,6 +64,11 @@ export function PhotoWallPage() {
                 : <span className="badge approved">Live</span>}
               <button type="button" className="secondary" disabled={busy === p.id} onClick={() => act(p.id, false)}>Remove</button>
             </div>
+            {p.user_id && (
+              <button type="button" className="ghost" style={{ marginTop: 6 }} disabled={busy === p.user_id} onClick={() => ban(p.user_id, !p.posting_banned)}>
+                {p.posting_banned ? 'Lift posting ban' : 'Ban this person from posting'}
+              </button>
+            )}
           </div>
         ))}
       </div>

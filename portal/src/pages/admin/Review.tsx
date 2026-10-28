@@ -16,7 +16,29 @@ type Pin = { lat: string; lng: string; noPin: boolean; sub: string; replace?: bo
 type DealRow = { id: string; listing_name: string; title: string; discount_text: string; valid_until: string | null; push_type: string; push_date: string | null; push_window: string | null };
 type EventRow = { id: string; listing_id: string; title: string; venue_name: string | null; start_date: string; start_time: string | null; ticket_url: string | null };
 
-function Actions({ onDo, blocked }: { onDo: (approve: boolean, note: string) => Promise<void>; blocked?: string }) {
+// Ready-made reasons, so a rejection is quick and still tells the business what to fix.
+const TEMPLATES: Record<'application' | 'deal' | 'event', string[]> = {
+  application: [
+    'We could not confirm you manage this business. Reply from an email on the business website, or call us from the listed number.',
+    'This business is outside the 30A area we cover (Inlet Beach to Dune Allen).',
+    'This place is already listed and managed by someone else. Contact us if you think that is wrong.',
+    'The address could not be found. Please check it and apply again.',
+  ],
+  deal: [
+    'Please say clearly what guests get, for example "10% off lunch" or "Free appetizer with an entree".',
+    'The deal needs an end date or must be available every day.',
+    'Deals cannot promote alcohol on its own. Pair it with food or an activity.',
+    'This looks like an ad rather than a deal. Please offer something guests get by showing the app.',
+  ],
+  event: [
+    'Please add the start time and where it takes place.',
+    'The date is in the past or does not match the title. Please check it.',
+    'This event is not open to the public.',
+    'This event is outside the 30A area we cover.',
+  ],
+};
+
+function Actions({ onDo, blocked, kind }: { onDo: (approve: boolean, note: string) => Promise<void>; blocked?: string; kind?: keyof typeof TEMPLATES }) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const run = async (a: boolean) => {
@@ -28,6 +50,12 @@ function Actions({ onDo, blocked }: { onDo: (approve: boolean, note: string) => 
   return (
     <>
       {blocked && <p className="muted small" style={{ margin: '0 0 8px' }}>{blocked}</p>}
+      {kind && (
+        <select aria-label="Ready-made reason" value="" onChange={(e) => e.target.value && setNote(e.target.value)} style={{ marginBottom: 8 }}>
+          <option value="">Pick a ready-made reason (optional)</option>
+          {TEMPLATES[kind].map((t) => (<option key={t} value={t}>{t}</option>))}
+        </select>
+      )}
       <input placeholder="Reason (required to reject)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
       <div className="row" style={{ marginTop: 10 }}>
         <button type="button" disabled={busy || !!blocked} onClick={() => run(true)}>Approve</button>
@@ -182,7 +210,7 @@ export function ReviewPage() {
                 </select>
               </>
             )}
-            <Actions blocked={blocked} onDo={(yes, note) => review('admin_review_application', {
+            <Actions kind="application" blocked={blocked} onDo={(yes, note) => review('admin_review_application', {
                 p_id: a.id, p_approve: yes, p_note: note,
                 p_lat: yes && pinSet ? latN : null, p_lng: yes && pinSet ? lngN : null,
                 p_no_pin: yes && pin.noPin, p_subcategory: pin.sub || null, p_replace_owner: yes && !!pin.replace,
@@ -214,7 +242,7 @@ export function ReviewPage() {
           <strong>{d.title}</strong> <span className="muted small">{d.listing_name}</span>
           <p style={{ margin: '6px 0' }}>{d.discount_text}</p>
           <p className="muted small">{d.valid_until ? `Until ${d.valid_until}` : 'No end date'}{d.push_type !== 'none' && d.push_date ? ` · push: ${d.push_type}, ${d.push_date}, ${d.push_window}${d.push_type === 'single' || d.push_type === 'nearby' ? ' (needs payment)' : ''}` : ''}</p>
-          <Actions onDo={(yes, note) => review('admin_review_deal', { p_deal_id: d.id, p_approve: yes, p_note: note },
+          <Actions kind="deal" onDo={(yes, note) => review('admin_review_deal', { p_deal_id: d.id, p_approve: yes, p_note: note },
             yes ? 'Deal approved. It is live in the app now. A booked push is scheduled once it is paid, or right away for Spotlight.' : 'Deal rejected. The business sees your reason.')} />
         </div>
       ))}
@@ -225,7 +253,7 @@ export function ReviewPage() {
         <div className="card" key={ev.id}>
           <strong>{ev.title}</strong>
           <p className="muted small">{ev.start_date} {ev.start_time ?? ''} · {ev.venue_name ?? ''}</p>
-          <Actions onDo={(yes, note) => review('admin_review_event', { p_id: ev.id, p_approve: yes, p_note: note },
+          <Actions kind="event" onDo={(yes, note) => review('admin_review_event', { p_id: ev.id, p_approve: yes, p_note: note },
             yes ? 'Event approved. It shows in Events in the app now.' : 'Event rejected. The business sees your reason.')} />
         </div>
       ))}

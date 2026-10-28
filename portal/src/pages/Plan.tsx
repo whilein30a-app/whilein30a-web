@@ -1,7 +1,8 @@
-import { Check, Crown, Megaphone, Sparkles, Star } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Check, CreditCard, Crown, Megaphone, Sparkles, Star } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '../auth';
+import { CheckoutDialog, openBillingPortal, useBillingStatus, useCheckoutReturn, useStripeKey, type CheckoutRequest } from '../billing';
 import { NeedListing, PageHeader } from '../components';
 import { useListings } from '../listings';
 import { supabase } from '../supabase';
@@ -13,9 +14,15 @@ const ICON = { premium: <Star size={20} />, featured: <Sparkles size={20} />, sp
 const TONE = { premium: 'teal', featured: 'gold', spotlight: 'deep' };
 
 function Body() {
-  const { current } = useListings();
+  const { current, reload } = useListings();
   const { session } = useAuth();
   const links = useSetting<Record<string, string>>('stripe_links').value ?? {};
+  const stripeKey = useStripeKey();
+  const { status: billingStatus, reload: reloadBilling } = useBillingStatus(current?.id);
+  const [checkout, setCheckout] = useState<{ req: CheckoutRequest; title: string } | null>(null);
+  const [portalBusy, setPortalBusy] = useState(false);
+  const refresh = useCallback(() => { reload(); reloadBilling(); }, [reload, reloadBilling]);
+  const back = useCheckoutReturn(refresh);
   const [billing, setBilling] = useState<'month' | 'year'>('month');
   const [slots, setSlots] = useState<{ subcategory: string | null; featured_left: number; spotlight_left: number } | null>(null);
   const [foundingLeft, setFoundingLeft] = useState(0);
@@ -40,6 +47,14 @@ function Body() {
 
   const tier: 'founding' | 'standard' = current.is_founding || foundingLeft > 0 ? 'founding' : 'standard';
   const email = session?.user.email;
+  const online = Boolean(stripeKey);
+  const sub = billingStatus?.subscription ?? null;
+
+  async function manageBilling() {
+    setErr(''); setPortalBusy(true);
+    try { await openBillingPortal(current!.id); } catch (e) { setErr(e instanceof Error ? e.message : 'Could not open billing.'); }
+    setPortalBusy(false);
+  }
 
   return (
     <>
@@ -53,6 +68,20 @@ function Body() {
               : `${current.billing === 'year' ? 'Billed yearly' : 'Billed monthly'}${current.plan_expires_on ? `, paid through ${current.plan_expires_on}` : ''}`}
           </div>
         </div>
+        {sub && (
+          <div className="small" style={{ flexBasis: '100%', order: 3, marginTop: 8 }}>
+            {sub.status === 'past_due'
+              ? <Msg kind="err">Your last payment did not go through. Stripe tries again for 7 days. Update your card in Manage billing to keep your plan.</Msg>
+              : sub.cancel_at_period_end
+                ? <span>Your plan ends on {sub.renews_on}. After that the listing goes back to Basic.</span>
+                : <span>Renews on {sub.renews_on}.</span>}
+          </div>
+        )}
+        {billingStatus?.has_customer && (
+          <button type="button" className="secondary" onClick={manageBilling} disabled={portalBusy}>
+            <CreditCard size={16} /> {portalBusy ? 'Opening...' : 'Manage billing'}
+          </button>
+        )}
         <div className="toggle" role="group" aria-label="Billing">
           <button type="button" aria-pressed={billing === 'month'} onClick={() => setBilling('month')}>Monthly</button>
           <button type="button" aria-pressed={billing === 'year'} onClick={() => setBilling('year')}>Yearly</button>
@@ -83,6 +112,9 @@ function Body() {
               )}
               {here ? <span className="badge approved">Your current plan</span>
                 : full ? <button type="button" className="secondary" disabled style={{ width: '100%' }}>Full right now</button>
+                : online ? <button type="button" style={{ width: '100%' }}
+                    onClick={() => setCheckout({ req: { kind: 'plan', listing_id: current.id, plan: p, billing }, title: `${PLAN_NAME[p]}, ${money(price)} a ${billing === 'month' ? 'month' : 'year'}` })}>
+                    {current.plan === 'basic' ? `Choose ${PLAN_NAME[p]}` : `Switch to ${PLAN_NAME[p]}`}</button>
                 : url ? <a className="btn" style={{ width: '100%' }} href={url} target="_blank" rel="noopener noreferrer">Choose {PLAN_NAME[p]}</a>
                 : asked === p ? <span className="badge approved">Request sent. We will email you.</span>
                 : <button type="button" style={{ width: '100%' }} disabled={busy === p} onClick={() => request(p)}>{busy === p ? 'Sending...' : `Choose ${PLAN_NAME[p]}`}</button>}
@@ -95,9 +127,17 @@ function Body() {
         {tier === 'founding'
           ? `Founding Partner prices, locked for 2 years. ${current.is_founding ? 'You are one of our first 20.' : `${foundingLeft} of 20 places left.`}`
           : 'Founding Partner places are full. These are our standard prices.'}
-        {' '}Choose a plan and we email you the payment details; once you pay we turn it on, usually within one business day. Featured and Spotlight need a free place in your subcategory.
+        {online
+          ? ' Pay by card here; your plan switches on as soon as the payment goes through. Switching plans ends the old one with a credit for the unused time. Cancel any time in Manage billing.'
+          : ' Choose a plan and we email you the payment details; once you pay we turn it on, usually within one business day.'}
+        {' '}Featured and Spotlight need a free place in your subcategory.
       </p>
+      {back && <Msg kind={back.kind}>{back.text}</Msg>}
       {err && <Msg kind="err">{err}</Msg>}
+      {checkout && (
+        <CheckoutDialog stripeKey={stripeKey} request={checkout.req} title={checkout.title}
+          onClose={() => { setCheckout(null); refresh(); }} />
+      )}
 
       <div className="card" style={{ marginTop: 18 }}>
         <div className="row" style={{ alignItems: 'flex-start', gap: 14 }}>

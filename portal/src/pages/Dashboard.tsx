@@ -6,6 +6,7 @@ import { AreaChart, HBars } from '../charts';
 import { Msg, NeedListing, PageHeader, Skeleton, errText } from '../components';
 import { useListings } from '../listings';
 import { supabase } from '../supabase';
+import { SetupChecklist, StatusCards, useListingStatus } from '../status';
 
 type Stats = {
   kinds: Record<string, { cur: number; prev: number }>;
@@ -157,12 +158,18 @@ function Body({ listingId }: { listingId: string }) {
   );
 }
 
+function StatusPanel({ id }: { id: string }) {
+  const { status } = useListingStatus(id);
+  if (!status) return null;
+  return (<><StatusCards status={status} /><SetupChecklist status={status} /></>);
+}
+
 export function DashboardPage() {
   const { current } = useListings();
   return (
     <>
       <PageHeader title={current ? current.name : 'Dashboard'} sub="How your listing did in the app over the last 30 days" />
-      <NeedListing>{(id) => <Body listingId={id} />}</NeedListing>
+      <NeedListing>{(id) => (<><StatusPanel id={id} /><Body listingId={id} /></>)}</NeedListing>
     </>
   );
 }

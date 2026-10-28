@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '../auth';
+import { CheckoutDialog, useCheckoutReturn, useStripeKey, type CheckoutRequest } from '../billing';
 import { NeedListing, Msg, errText, PageHeader } from '../components';
 import { useListings } from '../listings';
 import { PaidGate } from '../paid';
@@ -55,6 +56,8 @@ function Body({ listingId }: { listingId: string }) {
   const [err, setErr] = useState('');
   const [ok, setOk] = useState('');
   const [busy, setBusy] = useState(false);
+  const stripeKey = useStripeKey();
+  const [checkout, setCheckout] = useState<{ req: CheckoutRequest; title: string } | null>(null);
 
   const today = centralToday();
   const editingDeal = deals.find((d) => d.id === editing) ?? null;
@@ -69,6 +72,7 @@ function Body({ listingId }: { listingId: string }) {
     setTaken((t.data ?? []) as Taken[]);
   }, [listingId]);
   useEffect(() => { load(); }, [load]);
+  const back = useCheckoutReturn(load);
 
   // How many included pushes are already booked in the month being chosen.
   useEffect(() => {
@@ -124,6 +128,16 @@ function Body({ listingId }: { listingId: string }) {
     setErr(''); setOk('');
     const { error } = await supabase.rpc('portal_set_deal_active', { p_deal_id: d.id, p_active: !d.is_active });
     if (error) setErr(errText(error));
+    load();
+  }
+
+  async function withdraw(d: Deal) {
+    if (!window.confirm(`Withdraw "${d.title}"? It disappears from the app and from this list.`)) return;
+    setErr(''); setOk('');
+    const { data, error } = await supabase.rpc('portal_withdraw_deal', { p_deal_id: d.id });
+    if (error) return setErr(errText(error));
+    setOk(data === 'paused' ? 'Its push was already sent, so the deal is kept as a record and switched off.' : 'Deal withdrawn.');
+    if (editing === d.id) reset();
     load();
   }
 
@@ -201,6 +215,7 @@ function Body({ listingId }: { listingId: string }) {
         const pay = (d.push_type === 'single' || d.push_type === 'nearby') && !d.push_paid && (d.push_status === 'requested' || d.push_status === 'scheduled')
           ? payUrl(payBase, d.id, session?.user.email) : null;
         const cancellable = d.push_status === 'requested' || d.push_status === 'scheduled';
+        const payable = (d.push_type === 'single' || d.push_type === 'nearby') && !d.push_paid && cancellable;
         return (
           <div className="card" key={d.id}>
             <div className="row spread">
@@ -216,16 +231,25 @@ function Body({ listingId }: { listingId: string }) {
               {d.review_status === 'approved' && (
                 <button type="button" className="secondary" onClick={() => toggle(d)}>{d.is_active ? 'Pause' : 'Turn on'}</button>
               )}
-              {pay && <a className="btn" href={pay} target="_blank" rel="noopener noreferrer">Pay for push</a>}
+              {payable && stripeKey && (
+                <button type="button" onClick={() => setCheckout({
+                  req: { kind: 'push', listing_id: listingId, deal_id: d.id },
+                  title: `${d.push_type === 'nearby' ? 'Nearby push' : 'Single push'}, ${money(d.push_type === 'nearby' ? PUSH_PRICE.nearby : PUSH_PRICE.single)}`,
+                })}>Pay for push</button>
+              )}
+              {pay && !stripeKey && <a className="btn" href={pay} target="_blank" rel="noopener noreferrer">Pay for push</a>}
               {cancellable && <button type="button" className="secondary" onClick={() => cancelPush(d)}>Cancel push</button>}
+              <button type="button" className="ghost" onClick={() => withdraw(d)}>Withdraw</button>
             </div>
-            {(d.push_type === 'single' || d.push_type === 'nearby') && !d.push_paid && cancellable && !pay && (
+            {payable && !pay && !stripeKey && (
               <p className="muted small">Payment link not set up yet. We will send you one.</p>
             )}
           </div>
         );
       })}
-      <p className="muted small">Edited deals go back to review before they show again. After a payment, we confirm it and the push is scheduled.</p>
+      {back && <Msg kind={back.kind}>{back.text}</Msg>}
+      <p className="muted small">Edited deals go back to review before they show again. {stripeKey ? 'A paid push is scheduled as soon as the deal is approved.' : 'After a payment, we confirm it and the push is scheduled.'}</p>
+      {checkout && <CheckoutDialog stripeKey={stripeKey} request={checkout.req} title={checkout.title} onClose={() => { setCheckout(null); load(); }} />}
     </>
   );
 }

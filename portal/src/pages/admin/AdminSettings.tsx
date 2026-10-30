@@ -73,6 +73,101 @@ function StripeOnlineCard() {
   );
 }
 
+// Ask 30A usage limits (sql/106). The function counts every question.
+function Ask30aLimitsCard() {
+  const [day, setDay] = useState(30);
+  const [minute, setMinute] = useState(5);
+  const [total, setTotal] = useState(2000);
+  const [used, setUsed] = useState<{ used: number; people: number } | null>(null);
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+  function load() {
+    supabase.rpc('admin_ask30a_limits').then(({ data, error }) => {
+      if (error) return setErr(errText(error));
+      const d = data as { per_user_day: number; per_user_minute: number; total_day: number; used_today: number; people_today: number };
+      setDay(d.per_user_day); setMinute(d.per_user_minute); setTotal(d.total_day);
+      setUsed({ used: d.used_today, people: d.people_today });
+    });
+  }
+  useEffect(load, []);
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setErr(''); setMsg('');
+    const { error } = await supabase.rpc('admin_save_ask30a_limits', { p_per_user_day: day, p_per_user_minute: minute, p_total_day: total });
+    if (error) return setErr(errText(error));
+    setMsg('Ask 30A limits saved. They apply to the next question.');
+    load();
+  }
+  const num = (v: string) => Math.max(1, Math.floor(Number(v) || 1));
+  return (
+    <form className="card" onSubmit={submit}>
+      <h2 style={{ marginTop: 0 }}>Ask 30A limits</h2>
+      <p className="muted small">
+        Limits per person (their account, or their device if they are not signed in) and in total. Days reset at midnight 30A time. When a limit is
+        reached, the app shows a friendly message instead of an answer.
+        {used && <> Today so far: {used.used.toLocaleString()} questions from {used.people.toLocaleString()} people.</>}
+      </p>
+      <div className="grid">
+        <div>
+          <label htmlFor="ask_day">Questions per person per day</label>
+          <input id="ask_day" type="number" min={1} max={1000} value={day} onChange={(e) => setDay(num(e.target.value))} />
+        </div>
+        <div>
+          <label htmlFor="ask_min">Questions per person per minute</label>
+          <input id="ask_min" type="number" min={1} max={60} value={minute} onChange={(e) => setMinute(num(e.target.value))} />
+        </div>
+        <div>
+          <label htmlFor="ask_total">Total questions per day (everyone)</label>
+          <input id="ask_total" type="number" min={1} max={1000000} value={total} onChange={(e) => setTotal(num(e.target.value))} />
+        </div>
+      </div>
+      {err && <Msg kind="err">{err}</Msg>}
+      {msg && <Msg kind="ok">{msg}</Msg>}
+      <div style={{ marginTop: 16 }}><button type="submit">Save Ask 30A limits</button></div>
+    </form>
+  );
+}
+
+// Where the portal's admin emails and golf cart requests go (sql/106).
+function NotifyEmailsCard() {
+  const [adminEmail, setAdminEmail] = useState('');
+  const [golfEmail, setGolfEmail] = useState('');
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    supabase.rpc('admin_notify_settings').then(({ data, error }) => {
+      if (error) return setErr(errText(error));
+      const d = data as { admin_email: string; golf_cart_email: string };
+      setAdminEmail(d.admin_email ?? ''); setGolfEmail(d.golf_cart_email ?? '');
+    });
+  }, []);
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setErr(''); setMsg('');
+    const { error } = await supabase.rpc('admin_save_notify_settings', { p_admin_email: adminEmail, p_golf_cart_email: golfEmail });
+    if (error) return setErr(errText(error));
+    setMsg('Notification emails saved.');
+  }
+  const oldInbox = /in30a\.info@gmail\.com/i.test(adminEmail);
+  return (
+    <form className="card" onSubmit={submit}>
+      <h2 style={{ marginTop: 0 }}>Notification emails</h2>
+      <p className="muted small">
+        The admin email gets new applications, deals, events and plan requests. Golf cart requests from the app go to the golf cart
+        email, or to the admin email if it is empty.
+      </p>
+      {oldInbox && <Msg kind="err">The admin email is still the old in30a.info Gmail, which nobody can read right now. Change it.</Msg>}
+      <label htmlFor="notify_admin">Admin email</label>
+      <input id="notify_admin" type="email" required value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} />
+      <label htmlFor="notify_golf" style={{ marginTop: 10 }}>Golf cart requests email (optional)</label>
+      <input id="notify_golf" type="email" placeholder="Same as the admin email" value={golfEmail} onChange={(e) => setGolfEmail(e.target.value)} />
+      {err && <Msg kind="err">{err}</Msg>}
+      {msg && <Msg kind="ok">{msg}</Msg>}
+      <div style={{ marginTop: 16 }}><button type="submit">Save notification emails</button></div>
+    </form>
+  );
+}
+
 export function AdminSettingsPage() {
   const [links, setLinks] = useState<Record<string, string>>({});
   const [enforce, setEnforce] = useState(false);
@@ -187,7 +282,7 @@ export function AdminSettingsPage() {
 
   return (
     <>
-      <PageHeader title="App settings" sub="Payment links, plan limits, Terms version, transit season, push times and Nearby" />
+      <PageHeader title="App settings" sub="Payment links, plan limits, notification emails, Ask 30A limits, Terms version, transit season, push times and Nearby" />
       {msg && <Msg kind="ok">{msg}</Msg>}
       {err && <Msg kind="err">{err}</Msg>}
 
@@ -207,6 +302,10 @@ export function AdminSettingsPage() {
       </div>
 
       <StripeOnlineCard />
+
+      <NotifyEmailsCard />
+
+      <Ask30aLimitsCard />
 
       <form className="card" onSubmit={saveLinks}>
         <h2 style={{ marginTop: 0 }}>Stripe Payment Links</h2>

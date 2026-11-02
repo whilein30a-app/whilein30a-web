@@ -58,7 +58,7 @@ export function VisitorPreview({ id, photos }: { id: string; photos: Photo[] | n
           {current.subcategory && <div className="muted small">{current.subcategory}</div>}
           {current.address && <div className="muted small"><MapPin size={13} /> {current.address}</div>}
           <div className="small" style={{ marginTop: 6 }}>
-            {stats && stats.count > 0 ? <><Star size={13} color="#C88A1E" /> {stats.avg.toFixed(1)} ({stats.count} {stats.count === 1 ? 'review' : 'reviews'})</> : <span className="muted">New on in30A, be the first to rate</span>}
+            {stats && stats.count > 0 ? <><Star size={13} color="#C88A1E" /> {stats.avg.toFixed(1)} ({stats.count} {stats.count === 1 ? 'review' : 'reviews'})</> : <span className="muted">New on WhileIn, be the first to rate</span>}
           </div>
           {current.hours_note && <div className="small" style={{ marginTop: 6 }}>{current.hours_note}</div>}
           {!limited && current.description && <p className="small" style={{ marginBottom: 0 }}>{current.description}</p>}
@@ -86,7 +86,7 @@ export function Gallery({ id, photos, reload }: { id: string; photos: Photo[] | 
     e.target.value = '';
     if (!files.length) return;
     setErr('');
-    if (!terms) return setErr('Please agree to the in30A Business Listing Terms before you upload.');
+    if (!terms) return setErr('Please agree to the WhileIn Business Listing Terms before you upload.');
     setBusy(true);
     const termsErr = await acceptBusinessTerms('upload', id);
     if (termsErr) { setBusy(false); return setErr(termsErr); }

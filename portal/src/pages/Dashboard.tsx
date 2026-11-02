@@ -25,7 +25,7 @@ const LABELS: Record<string, string> = {
 const ORDER = ['detail_view', 'impression', 'call', 'directions', 'website', 'deal_view', 'deal_redeem', 'push_open', 'booking_request'];
 const SOURCES: Record<string, string> = {
   home: 'Home screen', featured: 'Featured slot', category: 'Category lists', map: 'Map', search: 'Search', deal: 'Deals',
-  ai: 'Ask 30A', push: 'Push notifications', area: 'Area guides', favorites: 'Saved places', photo_wall: 'Photo Wall', direct: 'Direct',
+  ai: 'Ask WhileIn', push: 'Push notifications', area: 'Area guides', favorites: 'Saved places', photo_wall: 'Photo Wall', direct: 'Direct',
   sponsor: 'Sponsor spots', deals_near_me: 'Deals Near Me',
 };
 
@@ -152,7 +152,7 @@ function Body({ listingId }: { listingId: string }) {
       </div>
       <p className="muted small">
         Visitor taps are calls, directions, website taps and deal views. Repeat taps by the same person within 30 minutes count once.
-        Test devices and the in30A team are left out. We never see who anyone is.
+        Test devices and the WhileIn team are left out. We never see who anyone is.
       </p>
     </>
   );

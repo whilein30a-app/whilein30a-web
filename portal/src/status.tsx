@@ -50,7 +50,7 @@ export function StatusCards({ status }: { status: ListingStatus }) {
         {status.plan_request_open ? '. Plan request sent, we will email you.' : ''}
       </Card>
       <Card icon={<MapPin size={20} />} tone={visible ? 'teal' : 'deep'} title={visible ? 'Live in the app' : status.in_area ? 'Listed, no map pin' : 'Not shown in the app'} to="/listing" link="Your listing">
-        {visible ? 'On the map and in lists.' : status.in_area ? 'Shows in lists and search, not on the map. Ask us to set the pin.' : 'Outside the 30A area. Email hello@in30a.app if that is wrong.'}
+        {visible ? 'On the map and in lists.' : status.in_area ? 'Shows in lists and search, not on the map. Ask us to set the pin.' : 'Outside the 30A area. Email hello@whilein.app if that is wrong.'}
       </Card>
       <Card icon={<Tag size={20} />} tone="gold" title={`${status.deals_live} live ${status.deals_live === 1 ? 'deal' : 'deals'}`} to="/deals" link="Deals">
         {status.deals_pending ? `${status.deals_pending} waiting for review. ` : ''}{status.deals_rejected ? `${status.deals_rejected} need changes.` : paid ? '' : 'Premium and up.'}
@@ -59,7 +59,7 @@ export function StatusCards({ status }: { status: ListingStatus }) {
         {status.events_pending ? `${status.events_pending} waiting for review.` : paid ? 'Nothing waiting.' : 'Premium and up.'}
       </Card>
       <Card icon={<Star size={20} />} tone="gold" title={status.reviews.count ? `${Number(status.reviews.avg).toFixed(1)} stars` : 'No reviews yet'} to="/listing" link="Get reviews">
-        {status.reviews.count ? `${status.reviews.count} in30A ${status.reviews.count === 1 ? 'review' : 'reviews'}` : 'Print your QR code to ask customers.'}
+        {status.reviews.count ? `${status.reviews.count} WhileIn ${status.reviews.count === 1 ? 'review' : 'reviews'}` : 'Print your QR code to ask customers.'}
       </Card>
       {status.changes_pending > 0 && (
         <Card icon={<MessageSquareText size={20} />} tone="deep" title={`${status.changes_pending} change ${status.changes_pending === 1 ? 'request' : 'requests'}`} to="/listing" link="See requests">

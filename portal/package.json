@@ -1,5 +1,5 @@
 {
-  "name": "in30a-portal",
+  "name": "whilein-portal",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -11,14 +11,15 @@
   "dependencies": {
     "@fontsource/poppins": "5.1.0",
     "@supabase/supabase-js": "^2.112.0",
+    "firebase": "^10.14.1",
     "lucide-react": "0.460.0",
-    "qrcode": "^1.5.4",
+    "qrcode": "1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0"
   },
   "devDependencies": {
-    "@types/qrcode": "^1.5.5",
+    "@types/qrcode": "1.5.5",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",

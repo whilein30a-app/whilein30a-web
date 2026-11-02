@@ -46,7 +46,7 @@ function Form({ id }: { id: string }) {
     const ext = TYPES[file.type];
     if (!ext) return setErr('Use a PNG, JPG or WebP image.');
     if (file.size > MAX_BYTES) return setErr('The image must be under 2 MB.');
-    if (!logoTerms) return setErr('Please agree to the in30A Business Listing Terms before you upload.');
+    if (!logoTerms) return setErr('Please agree to the WhileIn Business Listing Terms before you upload.');
     setUploading(true);
     const termsErr = await acceptBusinessTerms('upload', id);
     if (termsErr) { setUploading(false); return setErr(termsErr); }
@@ -98,7 +98,7 @@ function Form({ id }: { id: string }) {
       </div>
       <p className="muted small">
         {current?.address}{current?.category ? ` · ${current.category}` : ''}{current?.subcategory ? ` · ${current.subcategory}` : ''}.
-        To change the name, address, category or subcategory, email hello@in30a.app (we also move your map pin when the address changes).
+        To change the name, address, category or subcategory, email hello@whilein.app (we also move your map pin when the address changes).
       </p>
       {plan === 'basic' && (
         <Msg kind="ok">Your plan is Basic: name, address, map pin, phone, hours and one cover photo. Description, links, logo, deals and events are part of Premium and above. <Link to="/plan">See plans</Link></Msg>
@@ -161,7 +161,7 @@ function CoverPhoto({ id, onChanged }: { id: string; onChanged?: () => void }) {
     const ext = TYPES[file.type];
     if (!ext) return setErr('Use a PNG, JPG or WebP image.');
     if (file.size > 5 * 1024 * 1024) return setErr('The photo must be under 5 MB.');
-    if (!coverTerms) return setErr('Please agree to the in30A Business Listing Terms before you upload.');
+    if (!coverTerms) return setErr('Please agree to the WhileIn Business Listing Terms before you upload.');
     setBusy(true);
     const termsErr = await acceptBusinessTerms('upload', id);
     if (termsErr) { setBusy(false); return setErr(termsErr); }
@@ -208,12 +208,12 @@ function ReviewQr({ id }: { id: string }) {
     });
     return () => { live = false; };
   }, [id]);
-  const file = `in30A-rate-${(current?.name ?? 'listing').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`;
+  const file = `WhileIn-rate-${(current?.name ?? 'listing').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`;
   return (
     <div className="card">
       <h2 style={{ marginTop: 0 }}>Get reviews from your customers</h2>
       <p className="muted small">
-        Print this code for your counter, menu or receipts. Scanning it opens your page in the in30A app on the rating screen.
+        Print this code for your counter, menu or receipts. Scanning it opens your page in the WhileIn app on the rating screen.
         Reviews come from visitors with a confirmed phone number, and you cannot review your own business.
       </p>
       {img ? <img src={img} alt="QR code to rate this business" style={{ width: 200, height: 200, border: '1px solid var(--line)', borderRadius: 12 }} /> : <p className="muted small">Making your code...</p>}

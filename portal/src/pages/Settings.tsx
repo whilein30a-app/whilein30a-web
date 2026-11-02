@@ -106,7 +106,7 @@ export function SettingsPage() {
             ))}
           </ul>
         )}
-        <p className="muted small" style={{ marginBottom: 0 }}><a href="https://in30a.app/terms" target="_blank" rel="noopener noreferrer">Read the Terms</a></p>
+        <p className="muted small" style={{ marginBottom: 0 }}><a href="https://whilein.app/terms" target="_blank" rel="noopener noreferrer">Read the Terms</a></p>
       </div>
       <div className="row">
         <button type="button" className="secondary" onClick={() => supabase.auth.signOut()}>Sign out</button>

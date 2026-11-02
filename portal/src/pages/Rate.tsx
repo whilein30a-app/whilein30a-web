@@ -1,5 +1,5 @@
 // Public page a business's QR code opens (Trello A43). It tries to open the
-// in30A app on the place's rating screen, and offers the app download.
+// WhileIn app on the place's rating screen, and offers the app download.
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -24,21 +24,21 @@ export function RatePage() {
     <div style={{ minHeight: '100vh', background: 'var(--sand)', padding: 16 }}>
       <div className="card" style={{ maxWidth: 440, margin: '40px auto', textAlign: 'center' }}>
         <div style={{ background: 'var(--deep, #0B3954)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-          <img src={logo} alt="in30A" style={{ height: 40 }} />
+          <img src={logo} alt="WhileIn" style={{ height: 40 }} />
         </div>
         {missing ? (
           <>
             <h1 style={{ fontSize: '1.4rem' }}>This link is not valid</h1>
-            <p className="muted">Ask the business for a new code, or find them in the in30A app.</p>
+            <p className="muted">Ask the business for a new code, or find them in the WhileIn app.</p>
           </>
         ) : (
           <>
             <h1 style={{ fontSize: '1.4rem' }}>{name ? `How was ${name}?` : 'Loading...'}</h1>
-            <p className="muted">Rate it in the in30A app. It takes a few seconds and helps other visitors find the good spots.</p>
-            <a className="btn" style={{ width: '100%', marginTop: 8 }} href={appRateLink(id)}>Open in the in30A app</a>
+            <p className="muted">Rate it in the WhileIn app. It takes a few seconds and helps other visitors find the good spots.</p>
+            <a className="btn" style={{ width: '100%', marginTop: 8 }} href={appRateLink(id)}>Open in the WhileIn app</a>
             <a className="btn secondary" style={{ width: '100%', marginTop: 10 }} href={PLAY_URL}>Get the app on Google Play</a>
             <p className="muted small" style={{ marginTop: 14 }}>
-              in30A reviews come from visitors with a confirmed phone number. Businesses cannot remove honest reviews.
+              WhileIn reviews come from visitors with a confirmed phone number. Businesses cannot remove honest reviews.
             </p>
           </>
         )}

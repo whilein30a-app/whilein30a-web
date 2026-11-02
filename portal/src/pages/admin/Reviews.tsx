@@ -114,7 +114,7 @@ export function ReviewsPage() {
 
   return (
     <>
-      <PageHeader title="Reviews" sub="in30A reviews, newest first. Hide or remove only when a rule is broken." />
+      <PageHeader title="Reviews" sub="WhileIn reviews, newest first. Hide or remove only when a rule is broken." />
       <div className="toggle" role="group" aria-label="Which reviews" style={{ marginBottom: 14 }}>
         {(['visible', 'hidden', 'removed', 'all'] as const).map((s) => (
           <button key={s} type="button" aria-pressed={status === s} onClick={() => setStatus(s)}>{s[0].toUpperCase() + s.slice(1)}</button>

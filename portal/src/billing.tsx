@@ -132,7 +132,7 @@ export function CheckoutDialog({ stripeKey, request, title, onClose }: { stripeK
         {!ready && !err && <p className="muted">Loading the secure payment form...</p>}
         {err && <Msg kind="err">{err}</Msg>}
         <div ref={box} />
-        <p className="muted small" style={{ marginTop: 10 }}>Payments are handled by Stripe. in30A never sees your card number.</p>
+        <p className="muted small" style={{ marginTop: 10 }}>Payments are handled by Stripe. WhileIn never sees your card number.</p>
       </div>
     </div>
   );

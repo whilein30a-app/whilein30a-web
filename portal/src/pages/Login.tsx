@@ -43,7 +43,7 @@ export function LoginPage() {
     <AuthLayout>
     <div className="card">
       <h1>Sign in</h1>
-      <p className="muted">Manage your in30A listing, deals and events.</p>
+      <p className="muted">Manage your WhileIn listing, deals and events.</p>
       <form onSubmit={submit}>
         <label htmlFor="email">Email</label>
         <input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -54,7 +54,7 @@ export function LoginPage() {
         <button type="submit" disabled={busy} style={{ width: '100%', marginTop: 20 }}>{busy ? 'Signing in...' : 'Sign in'}</button>
         <button type="button" className="ghost" onClick={reset} style={{ width: '100%', marginTop: 6 }}>Forgot your password?</button>
       </form>
-      <p className="small muted" style={{ marginTop: 14, textAlign: 'center' }}>New to in30A Business? <Link to="/signup">Create an account</Link></p>
+      <p className="small muted" style={{ marginTop: 14, textAlign: 'center' }}>New to WhileIn Business? <Link to="/signup">Create an account</Link></p>
     </div>
     </AuthLayout>
   );

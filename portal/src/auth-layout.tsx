@@ -9,7 +9,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="auth">
       <section className="auth-art">
-        <Link to="/login"><img src={logoReverse} alt="in30A" /></Link>
+        <Link to="/login"><img src={logoReverse} alt="WhileIn" /></Link>
         <h1>Reach visitors while they are on 30A</h1>
         <ul>
           <li><MapPin size={20} /><span>Show up when visitors look for food, shops and things to do from Inlet Beach to Dune Allen.</span></li>
@@ -21,7 +21,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         <div style={{ width: '100%', maxWidth: 420 }}>
           {children}
           <p className="auth-foot">
-            <Link to="/privacy">Privacy Policy</Link> · <a href="mailto:hello@in30a.app">hello@in30a.app</a>
+            <Link to="/privacy">Privacy Policy</Link> · <a href="mailto:hello@whilein.app">hello@whilein.app</a>
           </p>
         </div>
       </section>

@@ -178,7 +178,7 @@ export function ApplyPage() {
     if (mode === 'new' && (!category || !subcategory)) return setErr('Choose a category and a subcategory so visitors can find you.');
     if (mode === 'new' && address.trim().length < 6) return setErr('Enter the street address. If you are a mobile service with no storefront, write "Mobile service" and the town you are based in.');
     if (!agree) return setErr('Please confirm you are allowed to manage this business.');
-    if (!termsOk) return setErr('Please agree to the in30A Business Listing Terms.');
+    if (!termsOk) return setErr('Please agree to the WhileIn Business Listing Terms.');
     setBusy(true);
     // Stores the date and Terms version for this claim. The database refuses
     // the application without it (sql/100).
@@ -208,7 +208,7 @@ export function ApplyPage() {
       <PageHeader title="Add your business" sub="Claim your listing in the app, or tell us about a new one" />
       <form className="card" onSubmit={submit}>
         <div className="row" style={{ marginBottom: 8 }}>
-          <button type="button" className={mode === 'claim' ? '' : 'secondary'} onClick={() => setMode('claim')}>It is already in in30A</button>
+          <button type="button" className={mode === 'claim' ? '' : 'secondary'} onClick={() => setMode('claim')}>It is already in WhileIn</button>
           <button type="button" className={mode === 'new' ? '' : 'secondary'} onClick={() => setMode('new')}>It is not listed</button>
         </div>
 

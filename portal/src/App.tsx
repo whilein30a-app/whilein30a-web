@@ -59,7 +59,7 @@ function Side({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
   return (
     <aside className={`side ${open ? 'open' : ''}`} aria-label="Main menu">
       <Link to="/" className="side-logo" onClick={onNavigate}>
-        <img src={logoReverse} alt="in30A" />
+        <img src={logoReverse} alt="WhileIn" />
         <span>Business</span>
       </Link>
       <BusinessCard />
@@ -90,7 +90,7 @@ function Side({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
               <L to="/admin/pushes" icon={<Bell size={17} />}>Pushes</L>
               <L to="/admin/sponsors" icon={<Megaphone size={17} />}>Sponsors</L>
               <L to="/admin/analytics" icon={<BarChart3 size={17} />}>Analytics</L>
-              <L to="/admin/questions" icon={<MessageCircleQuestion size={17} />}>Ask 30A questions</L>
+              <L to="/admin/questions" icon={<MessageCircleQuestion size={17} />}>Ask WhileIn questions</L>
               <L to="/admin/photos" icon={<Images size={17} />}>Photo Wall</L>
               <L to="/admin/reviews" icon={<Star size={17} />}>Reviews</L>
               <L to="/admin/changes" icon={<MessageSquareText size={17} />}>Change requests</L>
@@ -131,7 +131,7 @@ function Shell() {
         <button type="button" className="ghost" style={{ color: '#fff', minHeight: 44 }} aria-label="Open menu" aria-expanded={open} onClick={() => setOpen(true)}>
           <Menu size={24} />
         </button>
-        <img src={logoReverse} alt="in30A Business" />
+        <img src={logoReverse} alt="WhileIn Business" />
         <div className="who">{current?.name ?? 'Business'}</div>
       </header>
 
@@ -147,7 +147,7 @@ function Shell() {
       <div className="content">
         <main><BusinessTermsGate><Outlet /></BusinessTermsGate></main>
         <footer>
-          <Link to="/privacy">Privacy Policy</Link> · Visit Like a Local LLC d/b/a in30A · <a href="mailto:hello@in30a.app">hello@in30a.app</a>
+          <Link to="/privacy">Privacy Policy</Link> · Visit Like a Local LLC d/b/a WhileIn · <a href="mailto:hello@whilein.app">hello@whilein.app</a>
         </footer>
       </div>
 

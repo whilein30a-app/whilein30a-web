@@ -9,7 +9,7 @@ import { useAuth } from './auth';
 import { useListings } from './listings';
 import { supabase } from './supabase';
 
-export const TERMS_URL = 'https://in30a.app/terms';
+export const TERMS_URL = 'https://whilein.app/terms';
 
 export async function acceptBusinessTerms(context: 'claim' | 'upload' | 'reaccept', listingId?: string | null) {
   const { error } = await supabase.rpc('accept_terms', { p_kind: 'business', p_context: context, p_listing_id: listingId ?? null });
@@ -22,7 +22,7 @@ export function BusinessTermsCheck({ id, checked, onChange }: { id: string; chec
       <input id={id} type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       <span>
         I agree to the{' '}
-        <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">in30A Business Listing Terms</a>{' '}
+        <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">WhileIn Business Listing Terms</a>{' '}
         (section 7 of the Terms of Use).
       </span>
     </label>
@@ -68,7 +68,7 @@ export function BusinessTermsGate({ children }: { children: ReactNode }) {
     <div className="card" style={{ maxWidth: 640 }}>
       <h2 style={{ marginTop: 0 }}>We have updated our Business Listing Terms</h2>
       <p>
-        Please read the updated <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">in30A Terms of Use</a>, in particular
+        Please read the updated <a href={TERMS_URL} target="_blank" rel="noopener noreferrer">WhileIn Terms of Use</a>, in particular
         section 7, Business Listings. You need to agree once to keep managing your business in the portal.
       </p>
       <BusinessTermsCheck id="reaccept-terms" checked={checked} onChange={setChecked} />

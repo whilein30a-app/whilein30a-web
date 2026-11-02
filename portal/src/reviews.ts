@@ -4,7 +4,7 @@ import { supabase } from './supabase';
 // The app's link scheme from app.json ("scheme"). If app.json says something
 // else, change it here, rebuild and deploy.
 export const APP_SCHEME = 'in30a';
-export const PLAY_URL = 'https://play.google.com/store/apps/details?id=com.in30a.app';
+export const PLAY_URL = 'https://play.google.com/store/apps/details?id=com.whilein.app';
 
 export const appRateLink = (listingId: string) => `${APP_SCHEME}://listing/${listingId}?rate=1`;
 

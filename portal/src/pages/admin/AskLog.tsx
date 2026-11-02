@@ -76,7 +76,7 @@ export function AskLogPage() {
   return (
     <>
       <PageHeader
-        title="Ask 30A questions"
+        title="Ask WhileIn questions"
         sub="What people ask, and where the answers are weak. No names or accounts are stored."
         actions={
           <div className="toggle" role="group" aria-label="Period">
@@ -103,7 +103,7 @@ export function AskLogPage() {
       {!rows && !err && <Skeleton height={90} count={3} />}
       {rows && rows.length === 0 && (
         <Empty icon={<ThumbsUp size={26} />} title="Nothing here">
-          {filter === 'todo' ? 'Every weak or unanswered question has been reviewed.' : 'No questions match this filter yet. They appear as people use Ask 30A.'}
+          {filter === 'todo' ? 'Every weak or unanswered question has been reviewed.' : 'No questions match this filter yet. They appear as people use Ask WhileIn.'}
         </Empty>
       )}
       {rows && rows.length > 0 && (

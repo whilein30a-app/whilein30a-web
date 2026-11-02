@@ -10,7 +10,7 @@ type Spot = {
 };
 
 const SLOTS: Array<{ id: Slot; label: string; cap: number; hint: string }> = [
-  { id: 'presenting', label: 'Presenting sponsor ("in30A presented by")', cap: 1, hint: 'One for the whole app. Logo works best.' },
+  { id: 'presenting', label: 'Presenting sponsor ("WhileIn presented by")', cap: 1, hint: 'One for the whole app. Logo works best.' },
   { id: 'home_carousel', label: 'Home carousel', cap: 5, hint: 'Up to 5 rotating slides. Use a wide image (about 1200 x 500).' },
   { id: 'section_parking', label: 'Parking banner', cap: 1, hint: 'Logo and link.' },
   { id: 'section_beaches', label: 'Beaches & Accesses banner', cap: 1, hint: 'Logo and link.' },

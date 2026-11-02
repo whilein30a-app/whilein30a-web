@@ -73,7 +73,7 @@ function StripeOnlineCard() {
   );
 }
 
-// Ask 30A usage limits (sql/106). The function counts every question.
+// Ask WhileIn usage limits (sql/106). The function counts every question.
 function Ask30aLimitsCard() {
   const [day, setDay] = useState(30);
   const [minute, setMinute] = useState(5);
@@ -95,13 +95,13 @@ function Ask30aLimitsCard() {
     setErr(''); setMsg('');
     const { error } = await supabase.rpc('admin_save_ask30a_limits', { p_per_user_day: day, p_per_user_minute: minute, p_total_day: total });
     if (error) return setErr(errText(error));
-    setMsg('Ask 30A limits saved. They apply to the next question.');
+    setMsg('Ask WhileIn limits saved. They apply to the next question.');
     load();
   }
   const num = (v: string) => Math.max(1, Math.floor(Number(v) || 1));
   return (
     <form className="card" onSubmit={submit}>
-      <h2 style={{ marginTop: 0 }}>Ask 30A limits</h2>
+      <h2 style={{ marginTop: 0 }}>Ask WhileIn limits</h2>
       <p className="muted small">
         Limits per person (their account, or their device if they are not signed in) and in total. Days reset at midnight 30A time. When a limit is
         reached, the app shows a friendly message instead of an answer.
@@ -123,7 +123,7 @@ function Ask30aLimitsCard() {
       </div>
       {err && <Msg kind="err">{err}</Msg>}
       {msg && <Msg kind="ok">{msg}</Msg>}
-      <div style={{ marginTop: 16 }}><button type="submit">Save Ask 30A limits</button></div>
+      <div style={{ marginTop: 16 }}><button type="submit">Save Ask WhileIn limits</button></div>
     </form>
   );
 }
@@ -188,7 +188,7 @@ export function AdminSettingsPage() {
   const [revRaw, setRevRaw] = useState<any>(null);
   const [popSaves, setPopSaves] = useState(5);
   const [popDays, setPopDays] = useState(30);
-  const [policyUrl, setPolicyUrl] = useState('https://in30a.app/review-policy');
+  const [policyUrl, setPolicyUrl] = useState('https://whilein.app/review-policy');
   const [rateBase, setRateBase] = useState('');
 
   useEffect(() => {
@@ -213,7 +213,7 @@ export function AdminSettingsPage() {
       setRevRaw(m.reviews ?? null);
       setPopSaves(m.reviews?.popular_saves ?? 5);
       setPopDays(m.reviews?.popular_days ?? 30);
-      setPolicyUrl(m.reviews?.policy_url ?? 'https://in30a.app/review-policy');
+      setPolicyUrl(m.reviews?.policy_url ?? 'https://whilein.app/review-policy');
       setRateBase(m.reviews?.rate_link_base ?? '');
     });
   }, []);
@@ -265,7 +265,7 @@ export function AdminSettingsPage() {
     if (!v || v.length > 40) { setErr('Enter the Terms version, for example the "Last updated" date 2026-10-23.'); return; }
     if (v === termsWas) { setMsg('Nothing changed.'); return; }
     if (!window.confirm('Change the Terms version? Every app user and every business will be asked to agree again.')) return;
-    const next = { terms_url: 'https://in30a.app/terms', privacy_url: 'https://in30a.app/privacy', ...(termsRaw ?? {}), version: v };
+    const next = { terms_url: 'https://whilein.app/terms', privacy_url: 'https://whilein.app/privacy', ...(termsRaw ?? {}), version: v };
     run(save('terms', next), 'Terms version saved. Everyone is asked to agree to the new Terms the next time they open the app or the portal.');
     setTermsWas(v);
   }
@@ -282,7 +282,7 @@ export function AdminSettingsPage() {
 
   return (
     <>
-      <PageHeader title="App settings" sub="Payment links, plan limits, notification emails, Ask 30A limits, Terms version, transit season, push times and Nearby" />
+      <PageHeader title="App settings" sub="Payment links, plan limits, notification emails, Ask WhileIn limits, Terms version, transit season, push times and Nearby" />
       {msg && <Msg kind="ok">{msg}</Msg>}
       {err && <Msg kind="err">{err}</Msg>}
 
@@ -343,7 +343,7 @@ export function AdminSettingsPage() {
       <form className="card" onSubmit={saveTerms}>
         <h2 style={{ marginTop: 0 }}>Terms of Use version</h2>
         <p className="muted small">
-          Every agreement is stored with this version and the date. When you publish new Terms at in30a.app/terms, change the version here
+          Every agreement is stored with this version and the date. When you publish new Terms at whilein.app/terms, change the version here
           (use the page's "Last updated" date). Every app user and every business is then asked once to agree before continuing.
         </p>
         <label htmlFor="tv">Current version</label>
@@ -353,7 +353,7 @@ export function AdminSettingsPage() {
 
       <form className="card" onSubmit={saveReviews}>
         <h2 style={{ marginTop: 0 }}>Reviews</h2>
-        <p className="muted small">"Popular on in30A" shows on places with no reviews yet that enough people saved recently.</p>
+        <p className="muted small">"Popular on WhileIn" shows on places with no reviews yet that enough people saved recently.</p>
         <div className="grid">
           <div><label htmlFor="ps">Saves needed</label><input id="ps" type="number" min={1} max={100} value={popSaves} onChange={(e) => setPopSaves(Number(e.target.value))} /></div>
           <div><label htmlFor="pd">Within (days)</label><input id="pd" type="number" min={1} max={365} value={popDays} onChange={(e) => setPopDays(Number(e.target.value))} /></div>
@@ -361,8 +361,8 @@ export function AdminSettingsPage() {
         <label htmlFor="pu">Review policy page</label>
         <input id="pu" type="url" value={policyUrl} onChange={(e) => setPolicyUrl(e.target.value)} />
         <label htmlFor="rb">QR code address (optional)</label>
-        <input id="rb" type="url" placeholder="Blank uses this portal, for example https://portal.in30a.app/rate" value={rateBase} onChange={(e) => setRateBase(e.target.value)} />
-        <p className="muted small">Codes already printed keep their old address, so set this before businesses print, ideally to a permanent address on in30a.app.</p>
+        <input id="rb" type="url" placeholder="Blank uses this portal, for example https://portal.whilein.app/rate" value={rateBase} onChange={(e) => setRateBase(e.target.value)} />
+        <p className="muted small">Codes already printed keep their old address, so set this before businesses print, ideally to a permanent address on whilein.app.</p>
         <div style={{ marginTop: 16 }}><button type="submit">Save</button></div>
       </form>
 

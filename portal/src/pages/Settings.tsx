@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Msg, errText, PageHeader } from '../components';
 import { useAuth } from '../auth';
 import { useListings } from '../listings';
+import { MfaSettingsCard } from '../mfa';
 import { supabase } from '../supabase';
 
 export function SettingsPage() {
@@ -68,6 +69,7 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader title="Account settings" sub="Your sign-in, email, reports and agreements" />
+      <MfaSettingsCard />
       <div className="card">
         <p className="muted small" style={{ marginTop: 0 }}>Signed in as {session?.user.email}</p>
         <h2 style={{ marginTop: 0 }}>Monthly email report</h2>

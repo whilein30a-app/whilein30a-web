@@ -7,6 +7,7 @@ import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'rea
 
 import logoReverse from './assets/logo-reverse.png';
 import { useAuth } from './auth';
+import { MfaGate } from './mfa';
 import { Skeleton } from './components';
 import { useListings } from './listings';
 import { PLAN_NAME } from './plans';
@@ -23,6 +24,7 @@ import { PrivacyPage } from './pages/Privacy';
 import { SettingsPage } from './pages/Settings';
 import { SignupPage } from './pages/Signup';
 import { RatePage } from './pages/Rate';
+import { OwnerReviewsPage } from './pages/Reviews';
 import { BusinessTermsGate } from './terms';
 
 function BusinessCard() {
@@ -68,6 +70,7 @@ function Side({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
         <L to="/listing" icon={<Store size={19} />}>Listing</L>
         <L to="/deals" icon={<Tag size={19} />}>Deals</L>
         <L to="/events" icon={<CalendarDays size={19} />}>Events</L>
+        <L to="/reviews" icon={<Star size={19} />}>Reviews</L>
         <L to="/plan" icon={<Crown size={19} />}>Plan</L>
         <L to="/apply" icon={<Plus size={19} />}>Add a business</L>
       </nav>
@@ -112,14 +115,14 @@ function Side({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
 }
 
 function Shell() {
-  const { session } = useAuth();
+  const { session, mfa } = useAuth();
   const { current } = useListings();
   const [open, setOpen] = useState(false);
   const loc = useLocation();
   useEffect(() => { setOpen(false); }, [loc.pathname]);
 
   // Signed-out pages (login, sign up, privacy) use their own full-screen layout.
-  if (!session) return <Outlet />;
+  if (!session || mfa !== 'none') return <Outlet />;
 
   const tab = (to: string, label: string, icon: ReactNode, end = false) => (
     <NavLink to={to} end={end}>{icon}<span>{label}</span></NavLink>
@@ -163,10 +166,11 @@ function Shell() {
 }
 
 function RequireAuth({ admin }: { admin?: boolean }) {
-  const { session, isAdmin, loading } = useAuth();
+  const { session, isAdmin, loading, mfa } = useAuth();
   const loc = useLocation();
   if (loading) return <Skeleton height={160} />;
   if (!session) return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
+  if (mfa !== 'none') return <MfaGate />;
   if (admin && !isAdmin) return <Navigate to="/" replace />;
   return <Outlet />;
 }
@@ -194,6 +198,7 @@ export function App() {
           <Route path="/listing" element={<ListingPage />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/events" element={<EventsPage />} />
+          <Route path="/reviews" element={<OwnerReviewsPage />} />
           <Route path="/plan" element={<PlanPage />} />
           <Route path="/apply" element={<ApplyPage />} />
           <Route path="/settings" element={<SettingsPage />} />

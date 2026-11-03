@@ -1,16 +1,19 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
+import { checkMfaNeed, type MfaNeed } from './mfa';
 import { supabase } from './supabase';
 
 type AuthState = {
   session: Session | null;
   isAdmin: boolean;
   loading: boolean;
+  mfa: MfaNeed;
+  refreshMfa: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
-const Ctx = createContext<AuthState>({ session: null, isAdmin: false, loading: true, signOut: async () => {} });
+const Ctx = createContext<AuthState>({ session: null, isAdmin: false, loading: true, mfa: 'none', refreshMfa: async () => {}, signOut: async () => {} });
 
 export const useAuth = () => useContext(Ctx);
 
@@ -22,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [mfa, setMfa] = useState<MfaNeed>('none');
   const timer = useRef<number | undefined>(undefined);
 
   async function loadAdmin(s: Session | null) {
@@ -30,14 +34,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAdmin(data?.is_admin === true);
   }
 
+  async function loadMfa(s: Session | null) {
+    setMfa(s ? await checkMfaNeed() : 'none');
+  }
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      loadAdmin(data.session).finally(() => setLoading(false));
+      Promise.all([loadAdmin(data.session), loadMfa(data.session)]).finally(() => setLoading(false));
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
-      loadAdmin(s);
+      // Supabase asks not to await other auth calls inside this callback.
+      setTimeout(() => { loadAdmin(s); loadMfa(s); }, 0);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -58,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   return (
-    <Ctx.Provider value={{ session, isAdmin, loading, signOut: async () => void (await supabase.auth.signOut()) }}>
+    <Ctx.Provider value={{ session, isAdmin, loading, mfa, refreshMfa: () => loadMfa(session), signOut: async () => void (await supabase.auth.signOut()) }}>
       {children}
     </Ctx.Provider>
   );

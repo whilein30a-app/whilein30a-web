@@ -25,3 +25,12 @@ export const MODERATION_RULES = [
   'Not a genuine experience',
   'Illegal or explicit content',
 ] as const;
+
+export const REVIEW_POLICY_FALLBACK = 'https://whilein.app/review-policy';
+
+/** The public Review Policy address (Admin > App settings > Reviews). */
+export async function reviewPolicyUrl(): Promise<string> {
+  const { data } = await supabase.from('app_settings').select('value').eq('key', 'reviews').maybeSingle();
+  const u = String((data?.value as { policy_url?: string } | null)?.policy_url ?? '').trim();
+  return /^https:\/\//i.test(u) ? u : REVIEW_POLICY_FALLBACK;
+}

@@ -9,6 +9,7 @@ import { acceptBusinessTerms, BusinessTermsCheck } from '../terms';
 import QRCode from 'qrcode';
 import { rateUrl } from '../reviews';
 import { ChangeRequests, Gallery, usePhotos, useLimited, VisitorPreview } from './listing-extras';
+import { cleanImage } from '../clean-image';
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const TYPES: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
@@ -51,7 +52,9 @@ function Form({ id }: { id: string }) {
     const termsErr = await acceptBusinessTerms('upload', id);
     if (termsErr) { setUploading(false); return setErr(termsErr); }
     const path = `${id}/logo-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('listing-assets').upload(path, file, { contentType: file.type, upsert: false });
+    let clean: File;
+    try { clean = await cleanImage(file); } catch (e) { setUploading(false); return setErr((e as Error).message); }
+    const { error } = await supabase.storage.from('listing-assets').upload(path, clean, { contentType: clean.type, upsert: false });
     if (error) {
       setUploading(false);
       return setErr(errText(error));
@@ -166,7 +169,9 @@ function CoverPhoto({ id, onChanged }: { id: string; onChanged?: () => void }) {
     const termsErr = await acceptBusinessTerms('upload', id);
     if (termsErr) { setBusy(false); return setErr(termsErr); }
     const path = `${id}/cover-${Date.now()}.${ext}`;
-    const up = await supabase.storage.from('listing-assets').upload(path, file, { contentType: file.type, upsert: false });
+    let clean: File;
+    try { clean = await cleanImage(file); } catch (e) { setBusy(false); return setErr((e as Error).message); }
+    const up = await supabase.storage.from('listing-assets').upload(path, clean, { contentType: clean.type, upsert: false });
     if (up.error) { setBusy(false); return setErr(errText(up.error)); }
     const publicUrl = supabase.storage.from('listing-assets').getPublicUrl(path).data.publicUrl;
     const { error } = await supabase.rpc('portal_set_cover_photo', { p_listing_id: id, p_url: publicUrl });

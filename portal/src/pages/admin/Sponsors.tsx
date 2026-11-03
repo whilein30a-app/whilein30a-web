@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 
 import { Msg, errText, PageHeader } from '../../components';
 import { supabase } from '../../supabase';
+import { cleanImage } from '../../clean-image';
 
 type Slot = 'home_carousel' | 'section_parking' | 'section_beaches' | 'section_weather' | 'section_events' | 'section_tram' | 'presenting';
 type Spot = {
@@ -45,7 +46,9 @@ function Editor({ slot, spot, onDone, onCancel }: { slot: Slot; spot: Spot | nul
     if (f.size > MAX) return setErr('The image must be under 2 MB.');
     setBusy(true);
     const path = `${slot}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('sponsor-assets').upload(path, f, { contentType: f.type });
+    let clean: File;
+    try { clean = await cleanImage(f); } catch (e) { setBusy(false); return setErr((e as Error).message); }
+    const { error } = await supabase.storage.from('sponsor-assets').upload(path, clean, { contentType: clean.type });
     setBusy(false);
     if (error) return setErr(errText(error));
     set(supabase.storage.from('sponsor-assets').getPublicUrl(path).data.publicUrl);

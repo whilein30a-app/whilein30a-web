@@ -8,6 +8,7 @@ import { useListings } from '../listings';
 import { useSetting } from '../plans';
 import { supabase } from '../supabase';
 import { acceptBusinessTerms, BusinessTermsCheck } from '../terms';
+import { cleanImage } from '../clean-image';
 
 const TYPES: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
 type Photo = { id: string; url: string; sort_order: number };
@@ -95,7 +96,9 @@ export function Gallery({ id, photos, reload }: { id: string; photos: Photo[] | 
       if (!ext) { setErr(`${file.name}: use a PNG, JPG or WebP image.`); continue; }
       if (file.size > 5 * 1024 * 1024) { setErr(`${file.name}: must be under 5 MB.`); continue; }
       const path = `${id}/gallery-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-      const up = await supabase.storage.from('listing-assets').upload(path, file, { contentType: file.type, upsert: false });
+      let clean: File;
+      try { clean = await cleanImage(file); } catch (e) { setErr(`${file.name}: ${(e as Error).message}`); continue; }
+      const up = await supabase.storage.from('listing-assets').upload(path, clean, { contentType: clean.type, upsert: false });
       if (up.error) { setErr(errText(up.error)); break; }
       const url = supabase.storage.from('listing-assets').getPublicUrl(path).data.publicUrl;
       const { error } = await supabase.rpc('portal_add_photo', { p_listing_id: id, p_url: url });

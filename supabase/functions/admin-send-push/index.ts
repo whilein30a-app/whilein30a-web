@@ -45,8 +45,14 @@ serve(async (req) => {
   const { data: userData } = await admin.auth.getUser(jwt);
   const userId = userData?.user?.id;
   if (!userId) return reply({ error: 'Not allowed' }, 401);
-  const { data: prof } = await admin.from('profiles').select('is_admin').eq('id', userId).maybeSingle();
-  if (!prof?.is_admin) return reply({ error: 'Not allowed' }, 403);
+  // is_portal_admin() also requires the authenticator code step when portal
+  // two-step sign in is on (sql/109), so it is asked as the user, not as admin.
+  const asUser = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_ANON_KEY') ?? '', {
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: isAdmin } = await asUser.rpc('is_portal_admin');
+  if (isAdmin !== true) return reply({ error: 'Not allowed' }, 403);
 
   let input: any;
   try { input = await req.json(); } catch { return reply({ error: 'Bad request' }, 400); }

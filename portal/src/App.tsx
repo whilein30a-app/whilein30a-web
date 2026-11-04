@@ -1,6 +1,6 @@
 import {
   BarChart3, Bell, Building2, CalendarDays, ChevronRight, ClipboardCheck, Crown, Gauge, LayoutDashboard, LogOut, Megaphone,
-  Images, ListChecks, Menu, MessageCircleQuestion, MoreHorizontal, Plus, Settings, SlidersHorizontal, Star, Store, Tag, Users, X, MessageSquareText,
+  Images, ListChecks, Menu, Search, MessageCircleQuestion, MoreHorizontal, Plus, Settings, SlidersHorizontal, Star, Store, Tag, Users, X, MessageSquareText,
 } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
@@ -95,6 +95,7 @@ function Side({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
               <L to="/admin/analytics" icon={<BarChart3 size={17} />}>Analytics</L>
               <L to="/admin/questions" icon={<MessageCircleQuestion size={17} />}>Ask WhileIn questions</L>
               <L to="/admin/photos" icon={<Images size={17} />}>Photo Wall</L>
+              <L to="/admin/lost-found" icon={<Search size={17} />}>Lost & Found</L>
               <L to="/admin/reviews" icon={<Star size={17} />}>Reviews</L>
               <L to="/admin/changes" icon={<MessageSquareText size={17} />}>Change requests</L>
               <L to="/admin/business" icon={<Building2 size={17} />}>Businesses</L>

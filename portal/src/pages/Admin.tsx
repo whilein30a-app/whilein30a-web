@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { AnalyticsPage } from './admin/Analytics';
 import { AskLogPage } from './admin/AskLog';
+import { LostFoundPage } from './admin/LostFound';
 import { PhotoWallPage } from './admin/PhotoWall';
 import { PlansPage } from './admin/Plans';
 import { PushesPage } from './admin/Pushes';
@@ -25,6 +26,7 @@ export function AdminPage() {
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="questions" element={<AskLogPage />} />
         <Route path="photos" element={<PhotoWallPage />} />
+        <Route path="lost-found" element={<LostFoundPage />} />
         <Route path="reviews" element={<ReviewsPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="business" element={<BusinessSearchPage />} />
